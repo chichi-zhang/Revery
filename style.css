@@ -507,3 +507,21 @@ html, body {
   flex-shrink: 0 !important;
   z-index: 90 !important;
 }
+
+
+/* === 角色卡长按删除动效与触控增强 === */
+.chat-item,
+.story {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  touch-action: pan-y !important;
+  transition: transform 0.15s ease, background 0.15s ease !important;
+}
+
+.chat-item.pressing,
+.story.pressing {
+  transform: scale(0.96) !important;
+  background: var(--panel2) !important;
+  opacity: 0.85 !important;
+}
