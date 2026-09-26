@@ -148,12 +148,25 @@
     $('chatName').textContent = c.name;
     applyChatCustomTheme(c);
     renderMessages(c);
+    if ($('plusPanel')) $('plusPanel').classList.remove('open');
     $('chatPage').classList.add('show');
   }
 
   function renderMessages(c) {
+    var myAvatar = state.profile.avatar || fallbackAvatar;
+    var theirAvatar = c.avatar || fallbackAvatar;
     $('messages').innerHTML = c.messages.map(function(m) {
-      return '<div class="bubble ' + (m.role === 'user' ? 'me' : 'them') + '">' + esc(m.text) + '</div>';
+      var isMe = (m.role === 'user');
+      var avatar = isMe ? myAvatar : theirAvatar;
+      var timeStr = m.time || '';
+      return '<div class="cv-msg-row" data-sender="' + (isMe ? 'me' : 'them') + '">' +
+        (!isMe ? '<div class="cv-avatar-slot"><img src="' + avatar + '" alt="avatar"></div>' : '') +
+        '<div class="cv-msg-content">' +
+          '<div class="bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai') + '" data-message-type="text">' + esc(m.text) + '</div>' +
+          (timeStr ? '<span class="cv-bubble-time ' + (isMe ? 'cv-bubble-time-user' : 'cv-bubble-time-ai') + '">' + timeStr + '</span>' : '') +
+        '</div>' +
+        (isMe ? '<div class="cv-avatar-slot"><img src="' + avatar + '" alt="avatar"></div>' : '') +
+      '</div>';
     }).join('');
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
   }
@@ -174,6 +187,32 @@
   };
   $('shade').onclick = closeDrawer;
   $('closeDrawer').onclick = closeDrawer;
+  
+  // 切换加号多功能面板
+  $('plusBtn').onclick = function() {
+    $('plusPanel').classList.toggle('open');
+  };
+  // 点击加号项
+  $('plusPanel').onclick = function(e) {
+    var item = e.target.closest('[data-action]');
+    if (!item) return;
+    var act = item.dataset.action;
+    $('plusPanel').classList.remove('open');
+    if (act === 'image') toast('发送图片功能即将接入');
+    if (act === 'video') toast('发送视频功能即将接入');
+    if (act === 'sticker') toast('发送表情包功能即将接入');
+  };
+  // 通话按钮
+  $('chatCallBtn').onclick = function() { toast('语音通话即将接入'); };
+  $('chatVideoBtn').onclick = function() { toast('视频通话即将接入'); };
+  // API 回复按钮
+  $('apiReplyBtn').onclick = function() {
+    var c = character(activeId);
+    if (!c) return;
+    toast('正在请求 API 回复……');
+    requestReply(c);
+  };
+
   $('backBtn').onclick = function() {
     $('chatPage').classList.remove('show');
     activeId = null;
@@ -323,6 +362,7 @@
     $('messageInput').value = '';
     save();
     renderMessages(c);
+    if ($('plusPanel')) $('plusPanel').classList.remove('open');
     render();
     setTimeout(function() {
       c.messages.push({
@@ -332,6 +372,7 @@
       });
       save();
       renderMessages(c);
+    if ($('plusPanel')) $('plusPanel').classList.remove('open');
       render();
     }, 500);
   };
