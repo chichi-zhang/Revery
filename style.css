@@ -983,3 +983,176 @@ input, textarea {
   cursor: pointer !important;
   touch-action: manipulation !important;
 }
+
+
+/* ===================================================
+   P2 专属原生现代聊天底栏规范 (iOS 胶囊卡片质感)
+   =================================================== */
+.p2-footer-panel {
+  flex-shrink: 0 !important;
+  z-index: 25 !important;
+  background: var(--bg) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  padding: 8px 12px calc(8px + var(--safe-bottom)) !important;
+}
+
+.p2-composer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 统一圆形辅助按钮 (加号) */
+.p2-btn {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.p2-plus-btn {
+  background: var(--panel2) !important;
+  color: var(--text) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+.p2-plus-btn:active {
+  transform: scale(0.92) !important;
+  background: var(--line) !important;
+}
+
+/* 胶囊输入卡槽 (中间输入区，微圆角或大圆角药丸) */
+.p2-input-capsule {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 42px !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 21px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 6px 0 14px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.p2-input-capsule:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(143, 114, 255, 0.2) !important;
+}
+
+.p2-input {
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text) !important;
+  font-size: 14.5px !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+.p2-input::placeholder {
+  color: var(--muted) !important;
+  font-size: 14px !important;
+}
+
+/* 胶囊右侧内嵌工具 */
+.p2-capsule-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  flex-shrink: 0 !important;
+}
+
+.p2-capsule-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.p2-capsule-btn:active {
+  transform: scale(0.9) !important;
+  color: var(--text) !important;
+}
+
+/* 右侧核心发送按钮 (沉稳渐变圆盘) */
+.p2-send-btn {
+  background: linear-gradient(135deg, var(--accent), #735be8) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(143, 114, 255, 0.38) !important;
+}
+.p2-send-btn:active {
+  transform: scale(0.92) !important;
+  opacity: 0.9 !important;
+}
+
+/* 强化头像与多模式气泡联动 */
+.msg-row {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.msg-row.them {
+  justify-content: flex-start !important;
+}
+.msg-row.me {
+  justify-content: flex-end !important;
+}
+
+.msg-avatar {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+  background: var(--panel2) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22) !important;
+  display: block !important;
+}
+
+/* 纯净无头像模式 */
+.messages.avatar-mode-none .msg-avatar {
+  display: none !important;
+}
+
+/* 仅对方头像模式：隐藏我方头像 */
+.messages.avatar-mode-them_only .msg-row.me .msg-avatar {
+  display: none !important;
+}
+
+/* 仅自己头像模式：隐藏对方头像 */
+.messages.avatar-mode-me_only .msg-row.them .msg-avatar {
+  display: none !important;
+}
+
+.msg-row .bubble {
+  max-width: 74% !important;
+  width: fit-content !important;
+  display: inline-block !important;
+  margin: 0 !important;
+}
