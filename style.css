@@ -57,3 +57,139 @@ button,input,textarea,select{font:inherit;color:inherit}button{border:0;cursor:p
 /* 顶栏与底栏所有图标按钮：完全居中对齐 SVG */
 .icon-btn, .Revery-chat-plus-btn, .Revery-chat-send-btn, .Revery-chat-api-btn{display:flex;align-items:center;justify-content:center}
 .Revery-chat-call-btn svg, .Revery-chat-video-btn svg, .Revery-chat-settings-btn svg, .Revery-chat-back-btn svg, .Revery-chat-plus-btn svg, .Revery-chat-send-btn svg, .Revery-chat-api-btn svg{display:block}
+
+
+/* ========================================================
+   仿推特 / 布丁原生底层排版与气泡宽度强制修复
+   ======================================================== */
+.messages {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 16px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 核心修复：气泡绝对禁止竖向被挤压！自然横向撑开 */
+.bubble {
+  display: block !important;
+  width: fit-content !important;
+  min-width: 32px !important;
+  max-width: 82% !important;
+  padding: 9px 13px !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  box-sizing: border-box !important;
+  clear: both !important;
+}
+
+.bubble.them, .cv-bubble-ai {
+  align-self: flex-start !important;
+  background: var(--panel2) !important;
+  color: var(--text) !important;
+  border-radius: 18px 18px 18px 4px !important;
+}
+
+.bubble.me, .cv-bubble-user {
+  align-self: flex-end !important;
+  background: linear-gradient(135deg, var(--accent), #735be8) !important;
+  color: #ffffff !important;
+  border-radius: 18px 18px 4px 18px !important;
+}
+
+/* 仿推特原生底栏样式：白底/深底卡片，圆角输入槽，极佳触控反馈 */
+.cv-footer-panel {
+  flex-shrink: 0 !important;
+  z-index: 15 !important;
+  background: var(--bg) !important;
+  border-top: 1px solid var(--line) !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.cv-footer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px calc(8px + var(--safe-bottom)) !important;
+  background: transparent !important;
+  border: none !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.cv-func-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: var(--panel2) !important;
+  color: var(--text) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+}
+
+.cv-input-shell {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.cv-input {
+  width: 100% !important;
+  height: 38px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px !important;
+  background: var(--panel) !important;
+  padding: 0 16px !important;
+  outline: none !important;
+  font-size: 14px !important;
+  color: var(--text) !important;
+  box-sizing: border-box !important;
+}
+
+.cv-action-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+.cv-send-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+.cv-api-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: var(--panel2) !important;
+  color: var(--text) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+.cv-header-btn {
+  color: var(--text) !important;
+}
