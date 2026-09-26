@@ -357,16 +357,18 @@
     }
   };
 
-  // 开屏动画平滑淡出
-  window.addEventListener('DOMContentLoaded', function() {
+  // 开屏动画确保每次打开都有充足时长展示花体并平滑淡出
+  (function initSplash() {
     var splash = document.getElementById('splashScreen');
     if (splash) {
       setTimeout(function() {
         splash.classList.add('fade-out');
-        setTimeout(function() { splash.remove(); }, 600);
-      }, 700);
+        setTimeout(function() {
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+        }, 650);
+      }, 1200);
     }
-  });
+  })();
 
   // PWA 自动热更新检查与静默激活，打开即用最新代码
   if ('serviceWorker' in navigator) {
@@ -391,7 +393,7 @@
     var t = e.touches[0];
     sx = t.clientX;
     sy = t.clientY;
-    tracking = sx < 44;
+    tracking = sx < 28;
   }, { passive: true });
 
   document.addEventListener('touchend', function(e) {
