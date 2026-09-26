@@ -235,3 +235,63 @@ button,input,textarea,select{font:inherit;color:inherit}button{border:0;cursor:p
   display: block !important;
   margin: auto !important;
 }
+
+
+/* === 用户定制：灰黑配色与极简方圆角气泡（去除缺角小尾巴） === */
+.bubble,
+.Revery-chat-messages .bubble,
+.cv-messages .bubble,
+.cv-bubble-user,
+.cv-bubble-ai {
+  display: inline-block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 82% !important;
+  padding: 10px 14px !important;
+  font-size: 14.5px !important;
+  line-height: 1.45 !important;
+  box-sizing: border-box !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  border-radius: 14px !important; /* 四角完全对称的现代方圆角，无任何尖角/缺角 */
+}
+
+/* 深色模式默认（黑夜宇宙质感） */
+.bubble.them,
+.Revery-chat-messages .bubble.them,
+.cv-bubble-ai {
+  align-self: flex-start !important;
+  background: #1c1c20 !important; /* 沉稳灰黑 */
+  color: #ececee !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 14px !important;
+}
+
+.bubble.me,
+.Revery-chat-messages .bubble.me,
+.cv-bubble-user {
+  align-self: flex-end !important;
+  background: #2c2c34 !important; /* 略带冷调的高级灰黑 */
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+}
+
+/* 浅色模式适配 */
+html[data-theme="light"] .bubble.them,
+html[data-theme="light"] .Revery-chat-messages .bubble.them,
+html[data-theme="light"] .cv-bubble-ai {
+  background: #f0f0f3 !important; /* 细腻浅灰 */
+  color: #1a1a1e !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-radius: 14px !important;
+}
+
+html[data-theme="light"] .bubble.me,
+html[data-theme="light"] .Revery-chat-messages .bubble.me,
+html[data-theme="light"] .cv-bubble-user {
+  background: #2a2a30 !important; /* 沉静炭黑 */
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 14px !important;
+}
