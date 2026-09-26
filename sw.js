@@ -1,4 +1,4 @@
-const CACHE = 'revery-v18';
+const CACHE = 'revery-v19';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', event => {
