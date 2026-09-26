@@ -117,15 +117,11 @@
     $('chatList').innerHTML = state.characters.length ? state.characters.map(function(c) {
       var m = c.messages[c.messages.length - 1] || { text: c.greeting, time: '' };
       return '<button class="chat-item" data-id="' + c.id + '">' +
-        '<img src="' + esc(c.avatar || fallbackAvatar) + '">' +
-        '<span>' +
-          '<span class="chat-name">' + esc(c.name) + '</span>' +
-          '<span class="preview">' + esc(m.text) + '</span>' +
-        '</span>' +
-        '<span class="meta">' +
-          esc(m.time || '') +
-          (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') +
-        '</span>' +
+        '<img src="' + esc(c.avatar || fallbackAvatar) + '" alt="' + esc(c.name) + '">' +
+        '<div class="chat-info">' +
+          '<div class="chat-name">' + esc(c.name) + '</div>' +
+          '<div class="preview">' + esc(m.text) + '</div>' +
+        '</div>' +
         '</button>';
     }).join('') : '<div class="empty">还没有角色卡，点右上角的 ＋ 添加一个。</div>';
   }
@@ -361,9 +357,32 @@
     }
   };
 
+  // 开屏动画平滑淡出
+  window.addEventListener('DOMContentLoaded', function() {
+    var splash = document.getElementById('splashScreen');
+    if (splash) {
+      setTimeout(function() {
+        splash.classList.add('fade-out');
+        setTimeout(function() { splash.remove(); }, 600);
+      }, 700);
+    }
+  });
+
+  // PWA 自动热更新检查与静默激活，打开即用最新代码
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('./sw.js').catch(function() {});
+      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        reg.update();
+        setInterval(function() { reg.update(); }, 60000);
+      }).catch(function() {});
+      
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
     });
   }
 
