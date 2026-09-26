@@ -525,3 +525,31 @@ html, body {
   background: var(--panel2) !important;
   opacity: 0.85 !important;
 }
+
+
+/* === 彻底屏蔽移动端长按弹出原生菜单与文本选择 === */
+* {
+  -webkit-touch-callout: none !important; /* 彻底禁用 iOS/Android 长按系统弹出菜单（复制/分享/下载） */
+}
+
+/* 允许输入框和输入文本域正常选词打字 */
+input, textarea {
+  -webkit-touch-callout: default !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+.chat-item,
+.story,
+.chat-item *,
+.story * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+.chat-item img,
+.story img {
+  pointer-events: none !important; /* 防止图片长按触发浏览器下载或查看原图菜单 */
+}
