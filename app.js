@@ -152,21 +152,10 @@
     $('chatPage').classList.add('show');
   }
 
-  function renderMessages(c) {
-    var myAvatar = state.profile.avatar || fallbackAvatar;
-    var theirAvatar = c.avatar || fallbackAvatar;
+    function renderMessages(c) {
     $('messages').innerHTML = c.messages.map(function(m) {
       var isMe = (m.role === 'user');
-      var avatar = isMe ? myAvatar : theirAvatar;
-      var timeStr = m.time || '';
-      return '<div class="cv-msg-row" data-sender="' + (isMe ? 'me' : 'them') + '">' +
-        (!isMe ? '<div class="cv-avatar-slot"><img src="' + avatar + '" alt="avatar"></div>' : '') +
-        '<div class="cv-msg-content">' +
-          '<div class="bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai') + '" data-message-type="text">' + esc(m.text) + '</div>' +
-          (timeStr ? '<span class="cv-bubble-time ' + (isMe ? 'cv-bubble-time-user' : 'cv-bubble-time-ai') + '">' + timeStr + '</span>' : '') +
-        '</div>' +
-        (isMe ? '<div class="cv-avatar-slot"><img src="' + avatar + '" alt="avatar"></div>' : '') +
-      '</div>';
+      return '<div class="bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai') + '" data-message-type="text">' + esc(m.text) + '</div>';
     }).join('');
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
   }
