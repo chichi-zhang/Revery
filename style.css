@@ -295,3 +295,16 @@ html[data-theme="light"] .cv-bubble-user {
   border: none !important;
   border-radius: 14px !important;
 }
+
+
+/* === 主页大头像外圈灰白极简配色 === */
+.avatar {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.12)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  padding: 3px !important;
+}
+
+html[data-theme="light"] .avatar {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.04)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
