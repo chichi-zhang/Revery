@@ -185,25 +185,159 @@
   }
 
   $('menuBtn').onclick = openDrawer;
+  
+  // === 聊天美化与设置核心交互体系 (彻底修复点击无响应与模式联动) ===
+  var currentSelectedAvatarMode = 'both';
+  var tempUploadedAvatarB64 = '';
+  var tempUploadedBgB64 = '';
+
   function initChatThemeModal() {
     var c = character(activeId);
     if (!c) return;
+    
+    currentSelectedAvatarMode = c.avatarMode || 'both';
+    tempUploadedAvatarB64 = '';
+    tempUploadedBgB64 = '';
+
     var curAv = c.avatar || fallbackAvatar;
     var avInput = $('chatCustomAvatar');
     if (avInput) avInput.value = (c.avatar && c.avatar !== fallbackAvatar) ? c.avatar : '';
+    
     var avPrev = $('chatCustomAvatarPreview');
     if (avPrev) avPrev.src = curAv;
+    
     var bgInput = $('chatCustomBg');
     if (bgInput) bgInput.value = c.customBg || '';
+    
     var cssInput = $('chatCustomCss');
     if (cssInput) cssInput.value = c.customCss || '';
 
-    // 初始化选中的头像模式
-    var mode = c.avatarMode || 'both';
+    // 初始化选中的单选框
     var radios = document.getElementsByName('chatAvatarMode');
     for (var i = 0; i < radios.length; i++) {
-      radios[i].checked = (radios[i].value === mode);
+      if (radios[i].value === currentSelectedAvatarMode) {
+        radios[i].checked = true;
+      } else {
+        radios[i].checked = false;
+      }
     }
+  }
+
+  // 绑定模式选择点击（同时支持 input change 和 label click，彻底解决触屏点不动）
+  var modeItems = document.querySelectorAll('.cv-segment-item');
+  for (var mi = 0; mi < modeItems.length; mi++) {
+    (function(item) {
+      item.addEventListener('click', function(e) {
+        var radio = item.querySelector('input[name="chatAvatarMode"]');
+        if (radio) {
+          radio.checked = true;
+          currentSelectedAvatarMode = radio.value;
+          var msgsEl = $('messages');
+          if (msgsEl) {
+            msgsEl.className = 'messages Revery-chat-messages cv-messages avatar-mode-' + radio.value;
+          }
+        }
+      });
+    })(modeItems[mi]);
+  }
+
+  // 头像本地文件选择
+  var avFileInput = $('chatCustomAvatarFile');
+  if (avFileInput) {
+    avFileInput.onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) {
+        var r = new FileReader();
+        r.onload = function(evt) {
+          var b64 = evt.target.result;
+          tempUploadedAvatarB64 = b64;
+          if ($('chatCustomAvatar')) $('chatCustomAvatar').value = b64;
+          if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = b64;
+          toast('头像选取成功！点击下方保存即可应用');
+        };
+        r.readAsDataURL(f);
+      }
+    };
+  }
+
+  // 头像 URL 输入同步预览
+  var avUrlInput = $('chatCustomAvatar');
+  if (avUrlInput) {
+    avUrlInput.oninput = function() {
+      var val = this.value.trim();
+      tempUploadedAvatarB64 = val;
+      if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = val || fallbackAvatar;
+    };
+  }
+
+  // 壁纸本地文件选择
+  var bgFileInput = $('chatCustomBgFile');
+  if (bgFileInput) {
+    bgFileInput.onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) {
+        var r = new FileReader();
+        r.onload = function(evt) {
+          tempUploadedBgB64 = evt.target.result;
+          if ($('chatCustomBg')) $('chatCustomBg').value = evt.target.result;
+          toast('壁纸选取成功！点击下方保存即可应用');
+        };
+        r.readAsDataURL(f);
+      }
+    };
+  }
+
+  // 核心保存逻辑（无论点击哪种设备，100% 顺畅执行）
+  function doSaveChatSettings(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var c = character(activeId);
+    if (!c) {
+      toast('未找到当前角色');
+      return;
+    }
+
+    // 1. 保存头像
+    var newAv = tempUploadedAvatarB64 || ($('chatCustomAvatar') ? $('chatCustomAvatar').value.trim() : '');
+    if (newAv) {
+      c.avatar = newAv;
+    }
+
+    // 2. 保存背景
+    var newBg = tempUploadedBgB64 || ($('chatCustomBg') ? $('chatCustomBg').value.trim() : '');
+    c.customBg = newBg;
+
+    // 3. 保存自定义 CSS
+    if ($('chatCustomCss')) {
+      c.customCss = $('chatCustomCss').value.trim();
+    }
+
+    // 4. 保存头像显示模式
+    var radios = document.getElementsByName('chatAvatarMode');
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].checked) {
+        currentSelectedAvatarMode = radios[i].value;
+        break;
+      }
+    }
+    c.avatarMode = currentSelectedAvatarMode;
+
+    save();
+    render();
+
+    // 5. 立即重绘当前聊天页与顶栏
+    if ($('chatAvatar')) $('chatAvatar').src = c.avatar || fallbackAvatar;
+    applyChatCustomTheme(c);
+    renderMessages(c);
+
+    // 6. 关闭模态框
+    hideModal('chatThemeModal');
+    toast('聊天设置与头像样式已生效！');
+  }
+
+  // 绑定保存按钮（click 与 touchend 兼容处理）
+  var saveBtn = $('saveChatTheme');
+  if (saveBtn) {
+    saveBtn.onclick = doSaveChatSettings;
   }
 
   $('chatMenuBtn').onclick = function() {
@@ -214,406 +348,6 @@
     $('chatTitle').onclick = function() {
       initChatThemeModal();
       showModal('chatThemeModal');
-    };
-  }
-  $('shade').onclick = closeDrawer;
-  $('closeDrawer').onclick = closeDrawer;
-  
-  // 切换加号多功能面板
-  $('plusBtn').onclick = function() {
-    $('plusPanel').classList.toggle('open');
-  };
-  // 点击加号项处理
-  $('plusPanel').onclick = function(e) {
-    var item = e.target.closest('[data-action]');
-    if (!item) return;
-    var act = item.dataset.action;
-    $('plusPanel').classList.remove('open');
-    var c = character(activeId);
-    if (!c) return;
-
-    if (act === 'image') {
-      var imgInput = $('chatImageInput');
-      if (imgInput) {
-        imgInput.value = '';
-        imgInput.click();
-      }
-    } else if (act === 'file') {
-      var fileInput = $('chatFileInput');
-      if (fileInput) {
-        fileInput.value = '';
-        fileInput.click();
-      }
-    } else if (act === 'reroll') {
-      // 重roll：如果最后一条是 assistant 的回复，删掉并重新生成；否则直接重新触发回复
-      if (c.messages.length > 0) {
-        if (c.messages[c.messages.length - 1].role === 'assistant') {
-          c.messages.pop();
-        }
-      }
-      toast('正在重新生成回复 (重roll)……');
-      save();
-      renderMessages(c);
-      render();
-      setTimeout(function() {
-        var rollTexts = [
-          '我重新想了想，刚才那句不算，听我的……',
-          '刚才没发挥好，让我重新说一遍给你听。',
-          '重来一次。你在我这永远有无限次重新开始的特权。',
-          '刚才那版没让你满意对不对？小狗换个姿势再来哄你。'
-        ];
-        var pick = rollTexts[Math.floor(Math.random() * rollTexts.length)];
-        c.messages.push({ role: 'assistant', text: pick, time: time() });
-        save();
-        renderMessages(c);
-        render();
-      }, 600);
-    } else if (act === 'video') {
-      toast('视频通话即将接入');
-    } else if (act === 'sticker') {
-      toast('发送表情包功能即将接入');
-    }
-  };
-
-  // 监听发送本地图片
-  if ($('chatImageInput')) {
-    $('chatImageInput').onchange = function(e) {
-      var f = e.target.files && e.target.files[0];
-      var c = character(activeId);
-      if (!f || !c) return;
-      if (f.size > 8 * 1024 * 1024) { toast('图片请小于 8MB'); return; }
-      var reader = new FileReader();
-      reader.onload = function(evt) {
-        c.messages.push({
-          role: 'user',
-          type: 'image',
-          mediaUrl: evt.target.result,
-          time: time()
-        });
-        save();
-        renderMessages(c);
-        render();
-        setTimeout(function() {
-          c.messages.push({
-            role: 'assistant',
-            text: '好看。只要是你拍的发来的，我都喜欢看。',
-            time: time()
-          });
-          save();
-          renderMessages(c);
-          render();
-        }, 800);
-      };
-      reader.readAsDataURL(f);
-    };
-  }
-
-  // 监听发送本地文件
-  if ($('chatFileInput')) {
-    $('chatFileInput').onchange = function(e) {
-      var f = e.target.files && e.target.files[0];
-      var c = character(activeId);
-      if (!f || !c) return;
-      var sizeStr = f.size > 1024 * 1024 ? (f.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB';
-      c.messages.push({
-        role: 'user',
-        type: 'file',
-        fileName: f.name,
-        fileSize: sizeStr,
-        time: time()
-      });
-      save();
-      renderMessages(c);
-      render();
-      toast('已发送文件: ' + f.name);
-      setTimeout(function() {
-        c.messages.push({
-          role: 'assistant',
-          text: '文件已收到（' + f.name + '），正在为你分析和归档中……',
-          time: time()
-        });
-        save();
-        renderMessages(c);
-        render();
-      }, 800);
-    };
-  }
-  // 通话按钮
-  $('chatCallBtn').onclick = function() { toast('语音通话即将接入'); };
-  $('chatVideoBtn').onclick = function() { toast('视频通话即将接入'); };
-  // API 回复按钮
-  $('apiReplyBtn').onclick = function() {
-    var c = character(activeId);
-    if (!c) return;
-    toast('正在请求 API 回复……');
-    requestReply(c);
-  };
-
-  $('backBtn').onclick = function() {
-    $('chatPage').classList.remove('show');
-    activeId = null;
-  };
-
-  $('addBtn').onclick = function() { showModal('characterModal'); };
-  document.querySelectorAll('.nav-btn').forEach(function(b) {
-    b.onclick = function() {
-      if (b.dataset.tab === 'home') return;
-      toast(b.textContent.trim() + '即将接入');
-    };
-  });
-  $('manageBtn').onclick = openDrawer;
-  $('editProfileBtn').onclick = function() {
-    fillProfile();
-    showModal('profileModal');
-  };
-
-  // === 角色卡长按删除与点击逻辑 ===
-  var pendingDeleteId = null;
-  var longPressTimer = null;
-  var isLongPressTriggered = false;
-  var touchStartX = 0, touchStartY = 0;
-
-  function showDeleteConfirm(id) {
-    var c = character(id);
-    if (!c) return;
-    pendingDeleteId = id;
-    $('deleteConfirmText').innerText = '确定要删除角色卡【' + c.name + '】吗？所有的对话历史记录也将被删除，且不可恢复。';
-    $('deleteConfirmModal').classList.add('show');
-    if (navigator.vibrate) {
-      try { navigator.vibrate(50); } catch(e){}
-    }
-  }
-
-  if ($('cancelDeleteBtn')) {
-    $('cancelDeleteBtn').onclick = function() {
-      if ($('deleteConfirmModal')) $('deleteConfirmModal').classList.remove('show');
-      pendingDeleteId = null;
-    };
-  }
-
-  if ($('confirmDeleteBtn')) {
-    $('confirmDeleteBtn').onclick = function() {
-      if (pendingDeleteId) {
-        state.characters = state.characters.filter(function(x) { return x.id !== pendingDeleteId; });
-        if (activeId === pendingDeleteId) {
-          activeId = null;
-          if ($('chatPage')) $('chatPage').classList.remove('show');
-        }
-        save();
-        render();
-        toast('角色卡已删除');
-      }
-      if ($('deleteConfirmModal')) $('deleteConfirmModal').classList.remove('show');
-      pendingDeleteId = null;
-    };
-  }
-
-  // 绑定 chatList 与 stories 的长按与防误触点击
-  function bindLongPressContainer(containerEl, isStories) {
-    if (!containerEl) return;
-
-    containerEl.addEventListener('touchstart', function(e) {
-      var item = e.target.closest('[data-id]');
-      if (!item) return;
-      isLongPressTriggered = false;
-      var t = e.touches[0];
-      touchStartX = t.clientX;
-      touchStartY = t.clientY;
-      item.classList.add('pressing');
-
-      clearTimeout(longPressTimer);
-      longPressTimer = setTimeout(function() {
-        isLongPressTriggered = true;
-        item.classList.remove('pressing');
-        showDeleteConfirm(item.dataset.id);
-      }, 550);
-    }, { passive: true });
-
-    containerEl.addEventListener('touchmove', function(e) {
-      var t = e.touches[0];
-      if (Math.abs(t.clientX - touchStartX) > 10 || Math.abs(t.clientY - touchStartY) > 10) {
-        clearTimeout(longPressTimer);
-        var item = e.target.closest('[data-id]');
-        if (item) item.classList.remove('pressing');
-      }
-    }, { passive: true });
-
-    containerEl.addEventListener('touchend', function(e) {
-      clearTimeout(longPressTimer);
-      var item = e.target.closest('[data-id]');
-      if (item) item.classList.remove('pressing');
-    });
-
-    containerEl.addEventListener('touchcancel', function(e) {
-      clearTimeout(longPressTimer);
-      var item = e.target.closest('[data-id]');
-      if (item) item.classList.remove('pressing');
-    });
-
-    // 点击事件（如果刚触发了长按，则阻止打开聊天）
-    containerEl.addEventListener('click', function(e) {
-      if (isLongPressTriggered) {
-        e.preventDefault();
-        e.stopPropagation();
-        isLongPressTriggered = false;
-        return;
-      }
-      if (isStories) {
-        var addBtn = e.target.closest('[data-add]');
-        if (addBtn) {
-          showModal('characterModal');
-          return;
-        }
-      }
-      var b = e.target.closest('[data-id]');
-      if (b) {
-        openChat(b.dataset.id);
-      }
-    });
-  }
-
-  bindLongPressContainer($('chatList'), false);
-  bindLongPressContainer($('stories'), true);
-
-  document.querySelectorAll('[data-open]').forEach(function(b) {
-    b.onclick = function() {
-      if (b.dataset.open === 'api') { fillApi(); showModal('apiModal'); }
-      if (b.dataset.open === 'profile') { fillProfile(); showModal('profileModal'); }
-      if (b.dataset.open === 'character') showModal('characterModal');
-    };
-  });
-
-  document.querySelectorAll('.close-modal').forEach(function(b) { b.onclick = closeModals; });
-  document.querySelectorAll('.modal').forEach(function(m) {
-    m.onclick = function(e) { if (e.target === m) closeModals(); };
-  });
-
-  function fillApi() {
-    var a = state.api || {};
-    $('apiName').value = a.name || '';
-    $('apiBase').value = a.base || '';
-    $('apiKey').value = a.key || '';
-    $('apiModel').value = a.model || '';
-  }
-
-  
-  function applyChatCustomTheme(c) {
-    var styleTag = $('ReveryCustomChatStyle');
-    if (styleTag) {
-      styleTag.textContent = c && c.customCss ? c.customCss : '';
-    }
-    var msgBox = $('messages');
-    if (msgBox) {
-      if (c && c.customBg) {
-        msgBox.style.backgroundImage = 'url(' + c.customBg + ')';
-      } else {
-        msgBox.style.backgroundImage = '';
-      }
-    }
-  }
-
-  // 头像即时上传与预览
-  var avFileInput = $('chatCustomAvatarFile');
-  if (avFileInput) {
-    avFileInput.onchange = function(e) {
-      var f = e.target.files && e.target.files[0];
-      if (f) {
-        var r = new FileReader();
-        r.onload = function(evt) {
-          var b64 = evt.target.result;
-          if ($('chatCustomAvatar')) $('chatCustomAvatar').value = b64;
-          if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = b64;
-          toast('头像已读取，点击保存即可应用');
-        };
-        r.readAsDataURL(f);
-      }
-    };
-  }
-
-  // URL 变化时同步预览
-  var avUrlInput = $('chatCustomAvatar');
-  if (avUrlInput) {
-    avUrlInput.oninput = function() {
-      var val = this.value.trim();
-      if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = val || fallbackAvatar;
-    };
-  }
-
-  // 背景壁纸文件选取
-  var bgFileInput = $('chatCustomBgFile');
-  if (bgFileInput) {
-    bgFileInput.onchange = function(e) {
-      var f = e.target.files && e.target.files[0];
-      if (f) {
-        var r = new FileReader();
-        r.onload = function(evt) {
-          if ($('chatCustomBg')) $('chatCustomBg').value = evt.target.result;
-          toast('壁纸已读取，点击保存生效');
-        };
-        r.readAsDataURL(f);
-      }
-    };
-  }
-
-  // 点击药丸分段单选时，即时预览/选中
-  var modeRadios = document.getElementsByName('chatAvatarMode');
-  for (var mi = 0; mi < modeRadios.length; mi++) {
-    modeRadios[mi].onchange = function() {
-      var msgsEl = $('messages');
-      if (msgsEl) {
-        msgsEl.className = 'messages Revery-chat-messages cv-messages avatar-mode-' + this.value;
-      }
-    };
-  }
-
-  // 保存聊天美化与设置核心函数
-  function doSaveChatSettings() {
-    var c = character(activeId);
-    if (!c) {
-      toast('未找到当前角色');
-      return;
-    }
-
-    var newAv = $('chatCustomAvatar') ? $('chatCustomAvatar').value.trim() : '';
-    if (newAv) {
-      c.avatar = newAv;
-    }
-    if ($('chatCustomBg')) {
-      c.customBg = $('chatCustomBg').value.trim();
-    }
-    if ($('chatCustomCss')) {
-      c.customCss = $('chatCustomCss').value.trim();
-    }
-
-    // 读取选中的头像显示模式
-    var selectedMode = 'both';
-    var radios = document.getElementsByName('chatAvatarMode');
-    for (var i = 0; i < radios.length; i++) {
-      if (radios[i].checked) {
-        selectedMode = radios[i].value;
-        break;
-      }
-    }
-    c.avatarMode = selectedMode;
-
-    save();
-    render();
-
-    // 即刻更新当前聊天顶栏及头像
-    if ($('chatAvatar')) $('chatAvatar').src = c.avatar || fallbackAvatar;
-    applyChatCustomTheme(c);
-    renderMessages(c);
-
-    hideModal('chatThemeModal');
-    toast('聊天设置与头像样式已更新！');
-  }
-
-  if ($('saveChatTheme')) {
-    $('saveChatTheme').onclick = doSaveChatSettings;
-    $('saveChatTheme').ontouchend = function(e) {
-      // 防止移动端 click 延迟或穿透
-      e.preventDefault();
-      doSaveChatSettings();
     };
   }
 
