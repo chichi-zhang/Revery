@@ -574,9 +574,19 @@
     }
   }
 
-  $('saveChatTheme').onclick = function() {
+  function executeSaveChatTheme(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
     var c = character(activeId);
-    if (!c) return;
+    if (!c) {
+      // 容错：如果 activeId 丢失，尝试从最后一个角色中恢复
+      if (state.characters && state.characters.length) {
+        c = state.characters[0];
+        activeId = c.id;
+      } else {
+        toast('未找到当前角色');
+        return;
+      }
+    }
 
     var newAv = $('chatCustomAvatar') ? $('chatCustomAvatar').value.trim() : '';
     if (newAv) {
@@ -611,9 +621,21 @@
     if ($('chatName')) $('chatName').textContent = getCharDisplayName(c);
     applyChatCustomTheme(c);
     renderMessages(c);
-    hideModal('chatThemeModal');
-    toast('聊天设置与备注已更新！');
-  };
+    closeModals();
+    toast('聊天设置与备注已保存！');
+  }
+
+  var saveThemeBtn = $('saveChatTheme');
+  if (saveThemeBtn) {
+    saveThemeBtn.onclick = executeSaveChatTheme;
+    // 监听 pointerdown 作为触屏即时响应
+    saveThemeBtn.addEventListener('pointerdown', function(e) {
+      saveThemeBtn.style.transform = 'scale(0.96)';
+    });
+    saveThemeBtn.addEventListener('pointerup', function(e) {
+      saveThemeBtn.style.transform = '';
+    });
+  }
 
   $('saveApi').onclick = function() {
     state.api = {
