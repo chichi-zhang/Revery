@@ -1156,3 +1156,55 @@ input, textarea {
   display: inline-block !important;
   margin: 0 !important;
 }
+
+
+/* === 双向备注设置卡片样式 === */
+.cv-remark-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+}
+
+.cv-remark-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.cv-remark-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+  margin-bottom: 2px !important;
+}
+
+.cv-remark-desc {
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  line-height: 1.35 !important;
+}
+
+.cv-remark-input {
+  width: 140px !important;
+  flex-shrink: 0 !important;
+  background: var(--panel2) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  padding: 7px 10px !important;
+  font-size: 13px !important;
+  color: var(--text) !important;
+  text-align: right !important;
+  outline: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.cv-remark-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(143, 114, 255, 0.2) !important;
+}
+
+.cv-remark-input::placeholder {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+}
