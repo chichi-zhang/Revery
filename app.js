@@ -15,7 +15,7 @@
       {
         id: 'xie',
         name: '谢尽欢',
-        avatar: fallbackAvatar,
+        avatar: 'https://imgbed.heliar.top/i/IsB-467lt3OstHl__Camera_XHS_1790267121539notes_pre_post_1040g3k0325f0b2k3l0005nd9hjmg8tu2p404iug_1790325127415edit.jpg',
         greeting: '你终于来了，我刚才还在等你。',
         prompt: '',
         unread: 2,
@@ -24,7 +24,7 @@
       {
         id: 'daddy',
         name: '我家那daddy',
-        avatar: fallbackAvatar,
+        avatar: 'https://imgbed.heliar.top/i/7b1PX-p63NyM8IgQ_Screenshot_2026-08-14-15-34-38-238_com.xingin.xhs_1786692962059edit.webp',
         greeting: '今天确实是个好天气。',
         prompt: '',
         unread: 0,
@@ -33,7 +33,7 @@
       {
         id: 'sheng',
         name: '生生',
-        avatar: fallbackAvatar,
+        avatar: 'https://imgbed.heliar.top/i/tg-MzxYRXp0TacOv_Camera_1040g3k03247963sj0m305ocsvk141fd7cvf5heg_1789280486022edit.webp',
         greeting: '要不要跟我聊一会儿？',
         prompt: '',
         unread: 1,
@@ -50,6 +50,17 @@
       if (x && x.profile && x.characters) {
         x.settings = x.settings || { theme: 'dark' };
         if (!localStorage.getItem(KEY) && x.profile.brand === 'bewitchment') x.profile.brand = 'Revery';
+        // 自动升级默认角色卡头像
+        var newAvatars = {
+          'xie': 'https://imgbed.heliar.top/i/IsB-467lt3OstHl__Camera_XHS_1790267121539notes_pre_post_1040g3k0325f0b2k3l0005nd9hjmg8tu2p404iug_1790325127415edit.jpg',
+          'daddy': 'https://imgbed.heliar.top/i/7b1PX-p63NyM8IgQ_Screenshot_2026-08-14-15-34-38-238_com.xingin.xhs_1786692962059edit.webp',
+          'sheng': 'https://imgbed.heliar.top/i/tg-MzxYRXp0TacOv_Camera_1040g3k03247963sj0m305ocsvk141fd7cvf5heg_1789280486022edit.webp'
+        };
+        x.characters.forEach(function(c) {
+          if (newAvatars[c.id] && (!c.avatar || c.avatar === fallbackAvatar || c.avatar.indexOf('data:image/svg') === 0)) {
+            c.avatar = newAvatars[c.id];
+          }
+        });
         return x;
       }
       return clone(defaults);
@@ -799,3 +810,10 @@
   applyTheme();
   render();
 })();
+  // 屏蔽长按弹出的系统复制/分享/下载浮窗
+  window.addEventListener('contextmenu', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      return;
+    }
+    e.preventDefault();
+  }, { capture: true });
