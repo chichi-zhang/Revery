@@ -153,6 +153,7 @@
     if (!c) return;
     activeId = id;
     c.unread = 0;
+    c.avatarMode = c.avatarMode || 'both';
     save();
     render();
     $('chatAvatar').src = c.avatar || fallbackAvatar;
@@ -184,14 +185,37 @@
   }
 
   $('menuBtn').onclick = openDrawer;
-  $('chatMenuBtn').onclick = function() {
+  function initChatThemeModal() {
     var c = character(activeId);
     if (!c) return;
-    $('chatCustomAvatar').value = c.avatar || '';
-    $('chatCustomBg').value = c.customBg || '';
-    $('chatCustomCss').value = c.customCss || '';
+    var curAv = c.avatar || fallbackAvatar;
+    var avInput = $('chatCustomAvatar');
+    if (avInput) avInput.value = (c.avatar && c.avatar !== fallbackAvatar) ? c.avatar : '';
+    var avPrev = $('chatCustomAvatarPreview');
+    if (avPrev) avPrev.src = curAv;
+    var bgInput = $('chatCustomBg');
+    if (bgInput) bgInput.value = c.customBg || '';
+    var cssInput = $('chatCustomCss');
+    if (cssInput) cssInput.value = c.customCss || '';
+
+    // 初始化选中的头像模式
+    var mode = c.avatarMode || 'both';
+    var radios = document.getElementsByName('chatAvatarMode');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].checked = (radios[i].value === mode);
+    }
+  }
+
+  $('chatMenuBtn').onclick = function() {
+    initChatThemeModal();
     showModal('chatThemeModal');
   };
+  if ($('chatTitle')) {
+    $('chatTitle').onclick = function() {
+      initChatThemeModal();
+      showModal('chatThemeModal');
+    };
+  }
   $('shade').onclick = closeDrawer;
   $('closeDrawer').onclick = closeDrawer;
   
@@ -488,14 +512,80 @@
     }
   }
 
-  $('saveChatTheme').onclick = function() {
-    var c = character(activeId);
-    if (!c) return;
-    c.avatar = $('chatCustomAvatar').value.trim() || c.avatar || fallbackAvatar;
-    c.customBg = $('chatCustomBg').value.trim();
-    c.customCss = $('chatCustomCss').value.trim();
+  // 头像即时上传与预览
+  var avFileInput = $('chatCustomAvatarFile');
+  if (avFileInput) {
+    avFileInput.onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) {
+        var r = new FileReader();
+        r.onload = function(evt) {
+          var b64 = evt.target.result;
+          if ($('chatCustomAvatar')) $('chatCustomAvatar').value = b64;
+          if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = b64;
+          toast('头像已读取，点击保存即可应用');
+        };
+        r.readAsDataURL(f);
+      }
+    };
+  }
 
-    // 保存头像显示模式
+  // URL 变化时同步预览
+  var avUrlInput = $('chatCustomAvatar');
+  if (avUrlInput) {
+    avUrlInput.oninput = function() {
+      var val = this.value.trim();
+      if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = val || fallbackAvatar;
+    };
+  }
+
+  // 背景壁纸文件选取
+  var bgFileInput = $('chatCustomBgFile');
+  if (bgFileInput) {
+    bgFileInput.onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) {
+        var r = new FileReader();
+        r.onload = function(evt) {
+          if ($('chatCustomBg')) $('chatCustomBg').value = evt.target.result;
+          toast('壁纸已读取，点击保存生效');
+        };
+        r.readAsDataURL(f);
+      }
+    };
+  }
+
+  // 点击药丸分段单选时，即时预览/选中
+  var modeRadios = document.getElementsByName('chatAvatarMode');
+  for (var mi = 0; mi < modeRadios.length; mi++) {
+    modeRadios[mi].onchange = function() {
+      var msgsEl = $('messages');
+      if (msgsEl) {
+        msgsEl.className = 'messages Revery-chat-messages cv-messages avatar-mode-' + this.value;
+      }
+    };
+  }
+
+  // 保存聊天美化与设置核心函数
+  function doSaveChatSettings() {
+    var c = character(activeId);
+    if (!c) {
+      toast('未找到当前角色');
+      return;
+    }
+
+    var newAv = $('chatCustomAvatar') ? $('chatCustomAvatar').value.trim() : '';
+    if (newAv) {
+      c.avatar = newAv;
+    }
+    if ($('chatCustomBg')) {
+      c.customBg = $('chatCustomBg').value.trim();
+    }
+    if ($('chatCustomCss')) {
+      c.customCss = $('chatCustomCss').value.trim();
+    }
+
+    // 读取选中的头像显示模式
     var selectedMode = 'both';
     var radios = document.getElementsByName('chatAvatarMode');
     for (var i = 0; i < radios.length; i++) {
@@ -508,12 +598,24 @@
 
     save();
     render();
-    $('chatAvatar').src = c.avatar;
+
+    // 即刻更新当前聊天顶栏及头像
+    if ($('chatAvatar')) $('chatAvatar').src = c.avatar || fallbackAvatar;
     applyChatCustomTheme(c);
     renderMessages(c);
+
     hideModal('chatThemeModal');
-    toast('聊天设置与头像样式已生效');
-  };
+    toast('聊天设置与头像样式已更新！');
+  }
+
+  if ($('saveChatTheme')) {
+    $('saveChatTheme').onclick = doSaveChatSettings;
+    $('saveChatTheme').ontouchend = function(e) {
+      // 防止移动端 click 延迟或穿透
+      e.preventDefault();
+      doSaveChatSettings();
+    };
+  }
 
   $('saveApi').onclick = function() {
     state.api = {
