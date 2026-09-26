@@ -193,3 +193,45 @@ button,input,textarea,select{font:inherit;color:inherit}button{border:0;cursor:p
 .cv-header-btn {
   color: var(--text) !important;
 }
+
+/* 强制气泡天然水平流式宽度与圆角 */
+.bubble,
+.Revery-chat-messages .bubble,
+.cv-messages .bubble {
+  display: inline-block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 82% !important;
+  padding: 10px 16px !important;
+  font-size: 14.5px !important;
+  line-height: 1.4 !important;
+  box-sizing: border-box !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+}
+
+.bubble.them,
+.Revery-chat-messages .bubble.them,
+.cv-bubble-ai {
+  align-self: flex-start !important;
+  border-radius: 18px 18px 18px 4px !important;
+}
+
+.bubble.me,
+.Revery-chat-messages .bubble.me,
+.cv-bubble-user {
+  align-self: flex-end !important;
+  border-radius: 18px 18px 4px 18px !important;
+}
+
+/* 顶部与底部按钮内 SVG 居中与颜色继承 */
+.icon-btn svg,
+.Revery-chat-topbar button svg,
+.cv-header-btn svg,
+.Revery-chat-composer button svg,
+.cv-func-btn svg,
+.cv-send-btn svg,
+.cv-api-btn svg {
+  display: block !important;
+  margin: auto !important;
+}
