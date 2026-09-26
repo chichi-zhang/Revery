@@ -332,16 +332,109 @@
     showModal('profileModal');
   };
 
-  $('chatList').onclick = function(e) {
-    var b = e.target.closest('[data-id]');
-    if (b) openChat(b.dataset.id);
+  // === 角色卡长按删除与点击逻辑 ===
+  var pendingDeleteId = null;
+  var longPressTimer = null;
+  var isLongPressTriggered = false;
+  var touchStartX = 0, touchStartY = 0;
+
+  function showDeleteConfirm(id) {
+    var c = character(id);
+    if (!c) return;
+    pendingDeleteId = id;
+    $('deleteConfirmText').innerText = '确定要删除角色卡【' + c.name + '】吗？所有的对话历史记录也将被删除，且不可恢复。';
+    $('deleteConfirmModal').classList.add('show');
+    if (navigator.vibrate) {
+      try { navigator.vibrate(50); } catch(e){}
+    }
+  }
+
+  $('cancelDeleteBtn').onclick = function() {
+    $('deleteConfirmModal').classList.remove('show');
+    pendingDeleteId = null;
   };
 
-  $('stories').onclick = function(e) {
-    var b = e.target.closest('[data-id],[data-add]');
-    if (!b) return;
-    b.dataset.add ? showModal('characterModal') : openChat(b.dataset.id);
+  $('confirmDeleteBtn').onclick = function() {
+    if (pendingDeleteId) {
+      state.characters = state.characters.filter(function(x) { return x.id !== pendingDeleteId; });
+      if (activeId === pendingDeleteId) {
+        activeId = null;
+        $('chatPage').classList.remove('show');
+      }
+      save();
+      render();
+      toast('角色卡已删除');
+    }
+    $('deleteConfirmModal').classList.remove('show');
+    pendingDeleteId = null;
   };
+
+  // 绑定 chatList 与 stories 的长按与防误触点击
+  function bindLongPressContainer(containerEl, isStories) {
+    if (!containerEl) return;
+
+    containerEl.addEventListener('touchstart', function(e) {
+      var item = e.target.closest('[data-id]');
+      if (!item) return;
+      isLongPressTriggered = false;
+      var t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      item.classList.add('pressing');
+
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(function() {
+        isLongPressTriggered = true;
+        item.classList.remove('pressing');
+        showDeleteConfirm(item.dataset.id);
+      }, 550);
+    }, { passive: true });
+
+    containerEl.addEventListener('touchmove', function(e) {
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - touchStartX) > 10 || Math.abs(t.clientY - touchStartY) > 10) {
+        clearTimeout(longPressTimer);
+        var item = e.target.closest('[data-id]');
+        if (item) item.classList.remove('pressing');
+      }
+    }, { passive: true });
+
+    containerEl.addEventListener('touchend', function(e) {
+      clearTimeout(longPressTimer);
+      var item = e.target.closest('[data-id]');
+      if (item) item.classList.remove('pressing');
+    });
+
+    containerEl.addEventListener('touchcancel', function(e) {
+      clearTimeout(longPressTimer);
+      var item = e.target.closest('[data-id]');
+      if (item) item.classList.remove('pressing');
+    });
+
+    // 点击事件（如果刚触发了长按，则阻止打开聊天）
+    containerEl.addEventListener('click', function(e) {
+      if (isLongPressTriggered) {
+        e.preventDefault();
+        e.stopPropagation();
+        isLongPressTriggered = false;
+        return;
+      }
+      if (isStories) {
+        var addBtn = e.target.closest('[data-add]');
+        if (addBtn) {
+          showModal('characterModal');
+          return;
+        }
+      }
+      var b = e.target.closest('[data-id]');
+      if (b) {
+        openChat(b.dataset.id);
+      }
+    });
+  }
+
+  bindLongPressContainer($('chatList'), false);
+  bindLongPressContainer($('stories'), true);
 
   document.querySelectorAll('[data-open]').forEach(function(b) {
     b.onclick = function() {
