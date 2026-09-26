@@ -40,3 +40,20 @@ button,input,textarea,select{font:inherit;color:inherit}button{border:0;cursor:p
 .Revery-plus-item{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent;cursor:pointer}
 .Revery-plus-icon{width:50px;height:50px;border-radius:14px;background:var(--panel2);display:grid;place-items:center;font-size:24px}
 .Revery-plus-label{font-size:12px;color:var(--text)}
+
+
+/* 主页底栏 SVG 图标完美垂直排版 */
+.bottom-nav .nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 0}
+.bottom-nav .nav-icon{display:flex;align-items:center;justify-content:center;color:inherit}
+.bottom-nav .nav-icon svg{display:block}
+.bottom-nav .nav-text{font-size:11px;line-height:1}
+
+/* 聊天气泡：彻底恢复正常自然自适应排版，禁止极端窄列折行 */
+.messages{display:flex;flex-direction:column;gap:10px;padding:18px 14px;overflow-y:auto}
+.bubble{max-width:80%;width:fit-content;min-width:0;padding:10px 14px;border-radius:18px;line-height:1.5;font-size:14px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+.bubble.them{align-self:flex-start;background:var(--panel2);color:var(--text);border-bottom-left-radius:4px}
+.bubble.me{align-self:flex-end;background:linear-gradient(135deg,var(--accent),#735be8);color:#fff;border-bottom-right-radius:4px}
+
+/* 顶栏与底栏所有图标按钮：完全居中对齐 SVG */
+.icon-btn, .Revery-chat-plus-btn, .Revery-chat-send-btn, .Revery-chat-api-btn{display:flex;align-items:center;justify-content:center}
+.Revery-chat-call-btn svg, .Revery-chat-video-btn svg, .Revery-chat-settings-btn svg, .Revery-chat-back-btn svg, .Revery-chat-plus-btn svg, .Revery-chat-send-btn svg, .Revery-chat-api-btn svg{display:block}
