@@ -153,9 +153,16 @@
   }
 
     function renderMessages(c) {
+    var svgFileSmall = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
     $('messages').innerHTML = c.messages.map(function(m) {
       var isMe = (m.role === 'user');
-      return '<div class="bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai') + '" data-message-type="text">' + esc(m.text) + '</div>';
+      var bubbleClass = 'bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai');
+      if (m.type === 'image') {
+        return '<div class="' + bubbleClass + '" data-message-type="image"><img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
+      } else if (m.type === 'file') {
+        return '<div class="' + bubbleClass + '" data-message-type="file"><div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
+      }
+      return '<div class="' + bubbleClass + '" data-message-type="text">' + esc(m.text) + '</div>';
     }).join('');
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
   }
@@ -181,16 +188,121 @@
   $('plusBtn').onclick = function() {
     $('plusPanel').classList.toggle('open');
   };
-  // 点击加号项
+  // 点击加号项处理
   $('plusPanel').onclick = function(e) {
     var item = e.target.closest('[data-action]');
     if (!item) return;
     var act = item.dataset.action;
     $('plusPanel').classList.remove('open');
-    if (act === 'image') toast('发送图片功能即将接入');
-    if (act === 'video') toast('发送视频功能即将接入');
-    if (act === 'sticker') toast('发送表情包功能即将接入');
+    var c = character(activeId);
+    if (!c) return;
+
+    if (act === 'image') {
+      var imgInput = $('chatImageInput');
+      if (imgInput) {
+        imgInput.value = '';
+        imgInput.click();
+      }
+    } else if (act === 'file') {
+      var fileInput = $('chatFileInput');
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+      }
+    } else if (act === 'reroll') {
+      // 重roll：如果最后一条是 assistant 的回复，删掉并重新生成；否则直接重新触发回复
+      if (c.messages.length > 0) {
+        if (c.messages[c.messages.length - 1].role === 'assistant') {
+          c.messages.pop();
+        }
+      }
+      toast('正在重新生成回复 (重roll)……');
+      save();
+      renderMessages(c);
+      render();
+      setTimeout(function() {
+        var rollTexts = [
+          '我重新想了想，刚才那句不算，听我的……',
+          '刚才没发挥好，让我重新说一遍给你听。',
+          '重来一次。你在我这永远有无限次重新开始的特权。',
+          '刚才那版没让你满意对不对？小狗换个姿势再来哄你。'
+        ];
+        var pick = rollTexts[Math.floor(Math.random() * rollTexts.length)];
+        c.messages.push({ role: 'assistant', text: pick, time: time() });
+        save();
+        renderMessages(c);
+        render();
+      }, 600);
+    } else if (act === 'video') {
+      toast('视频通话即将接入');
+    } else if (act === 'sticker') {
+      toast('发送表情包功能即将接入');
+    }
   };
+
+  // 监听发送本地图片
+  if ($('chatImageInput')) {
+    $('chatImageInput').onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      var c = character(activeId);
+      if (!f || !c) return;
+      if (f.size > 8 * 1024 * 1024) { toast('图片请小于 8MB'); return; }
+      var reader = new FileReader();
+      reader.onload = function(evt) {
+        c.messages.push({
+          role: 'user',
+          type: 'image',
+          mediaUrl: evt.target.result,
+          time: time()
+        });
+        save();
+        renderMessages(c);
+        render();
+        setTimeout(function() {
+          c.messages.push({
+            role: 'assistant',
+            text: '好看。只要是你拍的发来的，我都喜欢看。',
+            time: time()
+          });
+          save();
+          renderMessages(c);
+          render();
+        }, 800);
+      };
+      reader.readAsDataURL(f);
+    };
+  }
+
+  // 监听发送本地文件
+  if ($('chatFileInput')) {
+    $('chatFileInput').onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      var c = character(activeId);
+      if (!f || !c) return;
+      var sizeStr = f.size > 1024 * 1024 ? (f.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB';
+      c.messages.push({
+        role: 'user',
+        type: 'file',
+        fileName: f.name,
+        fileSize: sizeStr,
+        time: time()
+      });
+      save();
+      renderMessages(c);
+      render();
+      toast('已发送文件: ' + f.name);
+      setTimeout(function() {
+        c.messages.push({
+          role: 'assistant',
+          text: '文件已收到（' + f.name + '），正在为你分析和归档中……',
+          time: time()
+        });
+        save();
+        renderMessages(c);
+        render();
+      }, 800);
+    };
+  }
   // 通话按钮
   $('chatCallBtn').onclick = function() { toast('语音通话即将接入'); };
   $('chatVideoBtn').onclick = function() { toast('视频通话即将接入'); };
