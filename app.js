@@ -494,12 +494,25 @@
     c.avatar = $('chatCustomAvatar').value.trim() || c.avatar || fallbackAvatar;
     c.customBg = $('chatCustomBg').value.trim();
     c.customCss = $('chatCustomCss').value.trim();
+
+    // 保存头像显示模式
+    var selectedMode = 'both';
+    var radios = document.getElementsByName('chatAvatarMode');
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].checked) {
+        selectedMode = radios[i].value;
+        break;
+      }
+    }
+    c.avatarMode = selectedMode;
+
     save();
     render();
     $('chatAvatar').src = c.avatar;
     applyChatCustomTheme(c);
+    renderMessages(c);
     hideModal('chatThemeModal');
-    toast('聊天美化与设置已保存');
+    toast('聊天设置与头像样式已生效');
   };
 
   $('saveApi').onclick = function() {
