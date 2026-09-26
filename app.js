@@ -666,6 +666,42 @@
     isEdgeSwipe = false;
   }, { passive: true });
 
+  
+
+  // === 软键盘弹出时防止页面整体向上滚动导致顶栏消失 ===
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+      window.scrollTo(0, 0);
+      var chatPage = $('chatPage');
+      if (chatPage && chatPage.classList.contains('show')) {
+        chatPage.style.height = window.visualViewport.height + 'px';
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+          if ($('messages')) $('messages').scrollTop = $('messages').scrollHeight;
+        }, 50);
+      }
+    });
+    window.visualViewport.addEventListener('scroll', function() {
+      window.scrollTo(0, 0);
+    });
+  }
+
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 0) {
+      window.scrollTo(0, 0);
+    }
+  });
+
+  // 输入框获得焦点时确保不触发 window scroll
+  var textInput = $('textInput');
+  if (textInput) {
+    textInput.addEventListener('focus', function() {
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+      }, 100);
+    });
+  }
+
   save();
   applyTheme();
   render();
