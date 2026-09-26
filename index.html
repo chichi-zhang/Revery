@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Revery">
   <title>Revery</title>
-  "manifest.webmanifest"
-  "style.css"
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="app" id="app">
@@ -32,6 +32,6 @@
 <div class="modal" id="profileModal"><div class="sheet"><h2>编辑主页</h2><div class="field"><label>主页标题</label><input id="editBrand"></div><div class="field"><label>昵称</label><input id="editName"></div><div class="field"><label>个性签名</label><textarea id="editBio"></textarea></div><div class="field"><label>位置或状态</label><input id="editLocation"></div><div class="field"><label>头像图片网址</label><input id="editAvatar"></div><div class="field"><label>或从本地上传头像</label><input id="editAvatarFile" type="file" accept="image/*"></div><button class="primary" id="saveProfile">保存主页</button><button class="secondary close-modal">取消</button></div></div>
 <div class="modal" id="characterModal"><div class="sheet"><h2>新建角色卡</h2><div class="field"><label>角色名称</label><input id="charName" placeholder="角色名称"></div><div class="field"><label>头像图片网址</label><input id="charAvatar" placeholder="可留空"></div><div class="field"><label>或从本地上传头像</label><input id="charAvatarFile" type="file" accept="image/*"></div><div class="field"><label>开场白</label><textarea id="charGreeting" placeholder="角色第一次出现时说的话"></textarea></div><div class="field"><label>角色设定</label><textarea id="charPrompt" placeholder="人设、关系、语言风格……"></textarea></div><button class="primary" id="saveCharacter">添加到聊天列表</button><button class="secondary close-modal">取消</button></div></div>
 <div class="toast" id="toast"></div>
-"app.js"script>
+<script src="app.js"></script>
 </body>
 </html>
