@@ -130,7 +130,7 @@
       return '<button class="chat-item" data-id="' + c.id + '">' +
         '<img src="' + esc(c.avatar || fallbackAvatar) + '" alt="' + esc(c.name) + '">' +
         '<div class="chat-info">' +
-          '<div class="chat-name">' + esc(c.name) + '</div>' +
+          '<div class="chat-name">' + esc(getCharDisplayName(c)) + '</div>' +
           '<div class="preview">' + esc(m.text) + '</div>' +
         '</div>' +
         '</button>';
@@ -145,7 +145,16 @@
   }
 
   function character(id) {
-    return state.characters.find(function(c) { return c.id === id; });
+    return state.characters.find(function(c) { return c.id === id; }
+  function getCharDisplayName(c) {
+    if (!c) return '';
+    return c.remarkName || c.name;
+  }
+  function getUserCallingName(c) {
+    if (c && c.userRemark) return c.userRemark;
+    return (state.profile && state.profile.name) || '你';
+  }
+);
   }
 
   function openChat(id) {
@@ -157,7 +166,7 @@
     save();
     render();
     $('chatAvatar').src = c.avatar || fallbackAvatar;
-    $('chatName').textContent = c.name;
+    $('chatName').textContent = getCharDisplayName(c);
     applyChatCustomTheme(c);
     renderMessages(c);
     if ($('plusPanel')) $('plusPanel').classList.remove('open');
@@ -211,6 +220,9 @@
     
     var cssInput = $('chatCustomCss');
     if (cssInput) cssInput.value = c.customCss || '';
+
+    if ($('chatCustomAiRemark')) $('chatCustomAiRemark').value = c.remarkName || '';
+    if ($('chatCustomUserRemark')) $('chatCustomUserRemark').value = c.userRemark || '';
 
     // 初始化选中的单选框
     var radios = document.getElementsByName('chatAvatarMode');
@@ -311,6 +323,14 @@
       c.customCss = $('chatCustomCss').value.trim();
     }
 
+    // 3.1 保存双向备注
+    if ($('chatCustomAiRemark')) {
+      c.remarkName = $('chatCustomAiRemark').value.trim();
+    }
+    if ($('chatCustomUserRemark')) {
+      c.userRemark = $('chatCustomUserRemark').value.trim();
+    }
+
     // 4. 保存头像显示模式
     var radios = document.getElementsByName('chatAvatarMode');
     for (var i = 0; i < radios.length; i++) {
@@ -326,6 +346,7 @@
 
     // 5. 立即重绘当前聊天页与顶栏
     if ($('chatAvatar')) $('chatAvatar').src = c.avatar || fallbackAvatar;
+    if ($('chatName')) $('chatName').textContent = getCharDisplayName(c);
     applyChatCustomTheme(c);
     renderMessages(c);
 
@@ -423,14 +444,41 @@
     if ($('plusPanel')) $('plusPanel').classList.remove('open');
     render();
     setTimeout(function() {
+      // 演示和交互：如果用户发了换备注相关的测试消息，AI 可以动态互动并演示改备注
+      var replyText = '';
+      var lowerText = text.toLowerCase();
+      var myCallName = getUserCallingName(c);
+      var aiName = getCharDisplayName(c);
+
+      if (text.indexOf('备注') !== -1 || text.indexOf('称呼') !== -1 || text.indexOf('名字') !== -1) {
+        replyText = myCallName + '，我收到啦！我随时都知道你给我的备注是「' + aiName + '」，我对你的称谓是「' + myCallName + '」。你随时可以在聊天设置里改，我也随时可以在心动或吃醋的时候自己换掉哦～';
+      } else {
+        replyText = myCallName + '，我在呢！有什么想和我说的嘛？';
+      }
+
+      // 处理 AI 返回文本中的备注修改指令: [REMARK_AI:xxx] 或 [REMARK_USER:xxx]
+      var matchAiRemark = replyText.match(/\[REMARK_AI:([^\]]+)\]/);
+      if (matchAiRemark) {
+        c.remarkName = matchAiRemark[1].trim();
+        replyText = replyText.replace(matchAiRemark[0], '').trim();
+        toast('Ta 把你给Ta的备注换成了: ' + c.remarkName);
+      }
+      var matchUserRemark = replyText.match(/\[REMARK_USER:([^\]]+)\]/);
+      if (matchUserRemark) {
+        c.userRemark = matchUserRemark[1].trim();
+        replyText = replyText.replace(matchUserRemark[0], '').trim();
+        toast('Ta 对你的专属称呼已更新为: ' + c.userRemark);
+      }
+
       c.messages.push({
         role: 'assistant',
-        text: '这是本地原型回复。配置 API 并接入后端后，我会真正按照角色设定回答。',
+        text: replyText,
         time: time()
       });
       save();
+      if ($('chatName')) $('chatName').textContent = getCharDisplayName(c);
       renderMessages(c);
-    if ($('plusPanel')) $('plusPanel').classList.remove('open');
+      if ($('plusPanel')) $('plusPanel').classList.remove('open');
       render();
     }, 500);
   };
