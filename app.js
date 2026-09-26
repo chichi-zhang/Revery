@@ -109,7 +109,7 @@
 
     $('stories').innerHTML = state.characters.map(function(c) {
       return '<button class="story" data-id="' + c.id + '">' +
-        '<span class="ring"><img src="' + esc(c.avatar || fallbackAvatar) + '"></span>' +
+        '<span class="ring">"' + '"></span>' +
         '<span>' + esc(c.name) + '</span>' +
         '</button>';
     }).join('') + '<button class="story" data-add="1"><span class="ring" style="font-size:28px">＋</span><span>添加角色</span></button>';
@@ -117,7 +117,7 @@
     $('chatList').innerHTML = state.characters.length ? state.characters.map(function(c) {
       var m = c.messages[c.messages.length - 1] || { text: c.greeting, time: '' };
       return '<button class="chat-item" data-id="' + c.id + '">' +
-        '<img src="' + esc(c.avatar || fallbackAvatar) + '">' +
+        '"' + '">' +
         '<span>' +
           '<span class="chat-name">' + esc(c.name) + '</span>' +
           '<span class="preview">' + esc(m.text) + '</span>' +
@@ -176,7 +176,12 @@
   };
 
   $('addBtn').onclick = function() { showModal('characterModal'); };
-  $('navAdd').onclick = function() { showModal('characterModal'); };
+  document.querySelectorAll('.nav-btn').forEach(function(b) {
+    b.onclick = function() {
+      if (b.dataset.tab === 'home') return;
+      toast(b.textContent.trim() + '即将接入');
+    };
+  });
   $('manageBtn').onclick = openDrawer;
   $('editProfileBtn').onclick = function() {
     fillProfile();
@@ -334,7 +339,7 @@
 
   $('themeBtn').onclick = function() {
     state.settings = state.settings || {};
-    state.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
+    state.settings.theme = state.settings.settings === 'light' ? 'dark' : 'light';
     save();
     applyTheme();
     closeDrawer();
