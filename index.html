@@ -9,6 +9,8 @@
   <meta name="apple-mobile-web-app-title" content="Revery">
   <title>Revery</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="https://imgbed.heliar.top/i/wbD4SRfGIt32J-3S_Camera_XHS_1790171956869_1790325183635edit.jpg">
+  <link rel="icon" href="https://imgbed.heliar.top/i/wbD4SRfGIt32J-3S_Camera_XHS_1790171956869_1790325183635edit.jpg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,7 +26,7 @@
     <div class="section-head"><h2>聊天</h2><button id="manageBtn">管理角色</button></div>
     <section class="chat-list" id="chatList"></section>
   </main>
-  <nav class="bottom-nav"><button class="nav-btn active"><b>⌂</b>主页</button><button class="nav-btn"><b>⌕</b>发现</button><button class="nav-btn" id="navAdd"><b>⊕</b>添加</button><button class="nav-btn"><b>▧</b>文件</button><button class="nav-btn"><b>○</b>我的</button></nav>
+  <nav class="bottom-nav"><button class="nav-btn active" data-tab="home"><b>⌂</b>主页</button><button class="nav-btn" data-tab="explore"><b>⌕</b>发现</button><button class="nav-btn" data-tab="memory"><b>☷</b>记忆</button><button class="nav-btn" data-tab="terminal"><b>⌁</b>终端</button><button class="nav-btn" data-tab="tools"><b>🧰</b>工具箱</button></nav>
 </div>
 <div class="drawer" id="drawer"><div class="shade" id="shade"></div><aside class="drawer-panel"><div class="drawer-title"><h2>控制中心</h2><button class="icon-btn" id="closeDrawer">×</button></div><div class="menu-group"><small>Revery</small><button class="menu-item" id="themeBtn"><i>☀</i><span>切换日间版本</span><em>›</em></button><button class="menu-item" id="installBtn"><i>⇩</i><span>安装到桌面</span><em>›</em></button></div><div class="menu-group"><small>连接与模型</small><button class="menu-item" data-open="api"><i>◈</i><span>API 与模型</span><em>›</em></button><button class="menu-item"><i>⌁</i><span>连接测试</span><em>›</em></button></div><div class="menu-group"><small>角色与聊天</small><button class="menu-item" data-open="character"><i>＋</i><span>新建角色卡</span><em>›</em></button><button class="menu-item"><i>⇩</i><span>导入角色卡</span><em>›</em></button><button class="menu-item"><i>☷</i><span>对话与记忆</span><em>›</em></button></div><div class="menu-group"><small>个性化</small><button class="menu-item" data-open="profile"><i>✦</i><span>编辑主页</span><em>›</em></button><button class="menu-item"><i>◐</i><span>主题与聊天气泡</span><em>›</em></button></div><div class="menu-group"><small>数据</small><button class="menu-item" id="exportBtn"><i>⇧</i><span>导出本地数据</span><em>›</em></button><button class="menu-item" id="clearBtn"><i>⌫</i><span>清除演示数据</span><em>›</em></button></div></aside></div>
 <section class="page" id="chatPage"><header class="chat-head"><button class="icon-btn" id="backBtn">←</button><img id="chatAvatar"><div class="who"><strong id="chatName"></strong><small>在线</small></div><button class="icon-btn" id="chatMenuBtn">☰</button></header><div class="messages" id="messages"></div><form class="composer" id="composer"><button type="button">＋</button><input id="messageInput" placeholder="发消息……" autocomplete="off"><button class="send" type="submit">↑</button></form></section>
