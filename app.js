@@ -481,6 +481,79 @@
     }
   });
 
+  
+
+  // === 系统返回与屏幕边缘侧滑手势导航 ===
+  function closeAnyActiveView() {
+    var chatOpen = $('chatPage') && $('chatPage').classList.contains('show');
+    var drawerOpen = $('drawer') && $('drawer').classList.contains('open');
+    var modalOpen = document.querySelector('.modal.show');
+    var plusOpen = $('plusPanel') && $('plusPanel').classList.contains('open');
+
+    if (plusOpen) {
+      $('plusPanel').classList.remove('open');
+      return true;
+    }
+    if (modalOpen) {
+      closeModals();
+      return true;
+    }
+    if (drawerOpen) {
+      closeDrawer();
+      return true;
+    }
+    if (chatOpen) {
+      $('chatPage').classList.remove('show');
+      activeId = null;
+      return true;
+    }
+    return false;
+  }
+
+  // 1. 接管浏览器的物理返回键 / 侧滑手势 (popstate)
+  window.addEventListener('popstate', function(e) {
+    if (closeAnyActiveView()) {
+      // 成功关闭了一层浮层或返回了主页
+    }
+  });
+
+  // 在打开聊天页面或模态框时，推入一条 history，让系统返回手势生效
+  var originalOpenChat = openChat;
+  openChat = function(id) {
+    history.pushState({ page: 'chat', id: id }, '', '#chat');
+    originalOpenChat(id);
+  };
+
+  // 2. 屏幕左侧边缘右滑手势（仿 iOS / Android 系统级返回手势）
+  var edgeTouchStartX = 0, edgeTouchStartY = 0, isEdgeSwipe = false;
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    var t = e.touches[0];
+    edgeTouchStartX = t.clientX;
+    edgeTouchStartY = t.clientY;
+    // 只有在屏幕左边缘 36px 范围内开始滑，或者在聊天页面内向右滑才判定为返回手势
+    var inChat = $('chatPage') && $('chatPage').classList.contains('show');
+    isEdgeSwipe = (edgeTouchStartX <= 36) || inChat;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    if (!isEdgeSwipe) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - edgeTouchStartX;
+    var dy = Math.abs(t.clientY - edgeTouchStartY);
+
+    // 水平向右滑动超过 75px 且垂直偏离小于 60px
+    if (dx > 75 && dy < 60) {
+      if (closeAnyActiveView()) {
+        // 如果当时有 pushState，回退一格保持历史一致
+        if (location.hash === '#chat') {
+          history.replaceState(null, '', location.pathname + location.search);
+        }
+      }
+    }
+    isEdgeSwipe = false;
+  }, { passive: true });
+
   save();
   applyTheme();
   render();
