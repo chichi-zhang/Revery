@@ -5,8 +5,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#0a0a0b",
+  "background_color": "#f7f6fb",
+  "theme_color": "#f7f6fb",
   "icons": [
     {
       "src": "https://imgbed.heliar.top/i/wbD4SRfGIt32J-3S_Camera_XHS_1790171956869_1790325183635edit.jpg",
