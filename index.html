@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260926_52">
+  <link rel="stylesheet" href="style.css?v=20260926_60">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -193,6 +193,25 @@
         </div>
       </div>
 
+            <!-- 分组：双向备注设置 (我给AI的备注 + AI给我的备注) -->
+      <div class="cv-group-title">备注与昵称</div>
+      <div class="cv-card cv-remark-card">
+        <div class="cv-cell-row cv-remark-row">
+          <div class="cv-remark-info">
+            <div class="cv-remark-title">我给Ta的备注</div>
+            <div class="cv-remark-desc">自定义Ta在聊天顶栏与列表的显示名称</div>
+          </div>
+          <input id="chatCustomAiRemark" class="cv-remark-input" placeholder="留空使用原名" autocomplete="off">
+        </div>
+        <div class="cv-cell-row cv-remark-row" style="border-top: 1px solid var(--line);">
+          <div class="cv-remark-info">
+            <div class="cv-remark-title">Ta对我的称呼</div>
+            <div class="cv-remark-desc">AI 在心里与对话中对你的专属称谓</div>
+          </div>
+          <input id="chatCustomUserRemark" class="cv-remark-input" placeholder="留空使用用户资料昵称" autocomplete="off">
+        </div>
+      </div>
+
       <!-- 分组三：背景壁纸 (iOS 行组) -->
       <div class="cv-group-title">背景与外观</div>
       <div class="cv-card cv-bg-card">
@@ -244,7 +263,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260926_52"></script>
+<script src="app.js?v=20260926_60"></script>
 
 
 
