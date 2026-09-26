@@ -553,3 +553,52 @@ input, textarea {
 .story img {
   pointer-events: none !important; /* 防止图片长按触发浏览器下载或查看原图菜单 */
 }
+
+
+/* === 聊天气泡消息行与头像样式系统 === */
+.msg-row {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  margin-bottom: 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.msg-row.them {
+  justify-content: flex-start !important;
+}
+
+.msg-row.me {
+  justify-content: flex-end !important;
+}
+
+.msg-avatar {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+  pointer-events: none !important;
+}
+
+/* 纯净无头像模式 */
+.messages.avatar-mode-none .msg-avatar {
+  display: none !important;
+}
+
+/* 仅对方头像模式 */
+.messages.avatar-mode-them_only .msg-row.me .msg-avatar {
+  display: none !important;
+}
+
+/* 仅自己头像模式 */
+.messages.avatar-mode-me_only .msg-row.them .msg-avatar {
+  display: none !important;
+}
+
+.avatar-mode-card:has(input:checked) {
+  border-color: var(--accent) !important;
+  background: rgba(124, 77, 255, 0.08) !important;
+}
