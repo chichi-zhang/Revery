@@ -146,6 +146,7 @@
     render();
     $('chatAvatar').src = c.avatar || fallbackAvatar;
     $('chatName').textContent = c.name;
+    applyChatCustomTheme(c);
     renderMessages(c);
     $('chatPage').classList.add('show');
   }
@@ -163,7 +164,14 @@
   }
 
   $('menuBtn').onclick = openDrawer;
-  $('chatMenuBtn').onclick = openDrawer;
+  $('chatMenuBtn').onclick = function() {
+    var c = character(activeId);
+    if (!c) return;
+    $('chatCustomAvatar').value = c.avatar || '';
+    $('chatCustomBg').value = c.customBg || '';
+    $('chatCustomCss').value = c.customCss || '';
+    showModal('chatThemeModal');
+  };
   $('shade').onclick = closeDrawer;
   $('closeDrawer').onclick = closeDrawer;
   $('backBtn').onclick = function() {
@@ -215,6 +223,36 @@
     $('apiKey').value = a.key || '';
     $('apiModel').value = a.model || '';
   }
+
+  
+  function applyChatCustomTheme(c) {
+    var styleTag = $('ReveryCustomChatStyle');
+    if (styleTag) {
+      styleTag.textContent = c && c.customCss ? c.customCss : '';
+    }
+    var msgBox = $('messages');
+    if (msgBox) {
+      if (c && c.customBg) {
+        msgBox.style.backgroundImage = 'url(' + c.customBg + ')';
+      } else {
+        msgBox.style.backgroundImage = '';
+      }
+    }
+  }
+
+  $('saveChatTheme').onclick = function() {
+    var c = character(activeId);
+    if (!c) return;
+    c.avatar = $('chatCustomAvatar').value.trim() || c.avatar || fallbackAvatar;
+    c.customBg = $('chatCustomBg').value.trim();
+    c.customCss = $('chatCustomCss').value.trim();
+    save();
+    render();
+    $('chatAvatar').src = c.avatar;
+    applyChatCustomTheme(c);
+    hideModal('chatThemeModal');
+    toast('聊天美化与设置已保存');
+  };
 
   $('saveApi').onclick = function() {
     state.api = {
