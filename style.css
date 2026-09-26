@@ -919,3 +919,67 @@ input, textarea {
   transform: scale(0.97);
   opacity: 0.92;
 }
+
+
+/* === 消息行与头像在各模式下的严格排版联动 === */
+.msg-row {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.msg-row.them {
+  justify-content: flex-start !important;
+}
+
+.msg-row.me {
+  justify-content: flex-end !important;
+}
+
+.msg-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+  pointer-events: none !important;
+}
+
+/* 纯净无头像模式：隐藏双方头像 */
+.messages.avatar-mode-none .msg-avatar {
+  display: none !important;
+}
+
+/* 仅对方头像模式：隐藏自己头像 */
+.messages.avatar-mode-them_only .msg-row.me .msg-avatar {
+  display: none !important;
+}
+
+/* 仅自己头像模式：隐藏对方头像 */
+.messages.avatar-mode-me_only .msg-row.them .msg-avatar {
+  display: none !important;
+}
+
+/* 确保内部 bubble 在 flex 下宽度自适应，不拉长成 100% 单行 */
+.msg-row .bubble {
+  max-width: 76% !important;
+  width: fit-content !important;
+  display: inline-block !important;
+  margin: 0 !important;
+}
+
+/* 模态弹窗底部保存按钮确保可点击，不被遮挡 */
+.cv-sheet-footer {
+  position: relative !important;
+  z-index: 50 !important;
+}
+.cv-btn-primary, .cv-btn-secondary {
+  position: relative !important;
+  z-index: 60 !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+}
