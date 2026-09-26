@@ -35,23 +35,54 @@
   <nav class="bottom-nav"><button class="nav-btn active" data-tab="home"><b>⌂</b>主页</button><button class="nav-btn" data-tab="explore"><b>⌕</b>发现</button><button class="nav-btn" data-tab="memory"><b>☷</b>记忆</button><button class="nav-btn" data-tab="terminal"><b>⌁</b>终端</button><button class="nav-btn" data-tab="tools"><b>🧰</b>工具箱</button></nav>
 </div>
 <div class="drawer" id="drawer"><div class="shade" id="shade"></div><aside class="drawer-panel"><div class="drawer-title"><h2>控制中心</h2><button class="icon-btn" id="closeDrawer">×</button></div><div class="menu-group"><button class="menu-item" id="themeBtn"><i>☀</i><span>切换日间版本</span><em>›</em></button><button class="menu-item" id="installBtn"><i>⇩</i><span>安装到桌面</span><em>›</em></button></div><div class="menu-group"><small>连接与模型</small><button class="menu-item" data-open="api"><i>◈</i><span>API 与模型</span><em>›</em></button><button class="menu-item"><i>⌁</i><span>连接测试</span><em>›</em></button></div><div class="menu-group"><small>角色与聊天</small><button class="menu-item" data-open="character"><i>＋</i><span>新建角色卡</span><em>›</em></button><button class="menu-item"><i>⇩</i><span>导入角色卡</span><em>›</em></button><button class="menu-item"><i>☷</i><span>对话与记忆</span><em>›</em></button></div><div class="menu-group"><small>个性化</small><button class="menu-item" data-open="profile"><i>✦</i><span>编辑主页</span><em>›</em></button><button class="menu-item"><i>◐</i><span>主题与聊天气泡</span><em>›</em></button></div><div class="menu-group"><small>数据</small><button class="menu-item" id="exportBtn"><i>⇧</i><span>导出本地数据</span><em>›</em></button><button class="menu-item" id="clearBtn"><i>⌫</i><span>清除演示数据</span><em>›</em></button></div></aside></div>
-<section class="page Revery-chat-page" id="chatPage">
+<section class="page Revery-chat-page pudding-online-chat" id="chatPage">
   <style id="ReveryCustomChatStyle"></style>
-  <header class="chat-head Revery-chat-topbar" id="chatTopbar">
-    <button class="icon-btn Revery-chat-back-btn" id="backBtn" type="button">←</button>
-    <img class="Revery-chat-avatar" id="chatAvatar" alt="avatar">
-    <div class="who Revery-chat-who">
-      <strong class="Revery-chat-name" id="chatName"></strong>
-      <small class="Revery-chat-status" id="chatStatus">在线</small>
+  <header class="chat-head Revery-chat-topbar cv-header" id="chatTopbar">
+    <button class="icon-btn Revery-chat-back-btn cv-header-btn pudding-online-topbar-back-button" id="backBtn" type="button">←</button>
+    <img class="Revery-chat-avatar cv-header-avatar" id="chatAvatar" alt="avatar">
+    <div class="who Revery-chat-who cv-title-wrap">
+      <strong class="Revery-chat-name cv-title pudding-online-topbar-title" id="chatName"></strong>
+      <small class="Revery-chat-status pudding-online-topbar-status-text" id="chatStatus">在线</small>
     </div>
-    <button class="icon-btn Revery-chat-settings-btn" id="chatMenuBtn" type="button">☰</button>
+    <div class="Revery-chat-topbar-actions cv-header-actions">
+      <button class="icon-btn Revery-chat-call-btn cv-header-btn pudding-online-topbar-call-btn" id="chatCallBtn" type="button" title="语音通话">📞</button>
+      <button class="icon-btn Revery-chat-video-btn cv-header-btn pudding-online-topbar-video-btn" id="chatVideoBtn" type="button" title="视频通话">📹</button>
+      <button class="icon-btn Revery-chat-settings-btn cv-header-btn pudding-online-topbar-settings-button" id="chatMenuBtn" type="button" title="聊天设置">☰</button>
+    </div>
   </header>
-  <div class="messages Revery-chat-messages" id="messages"></div>
-  <form class="composer Revery-chat-composer" id="composer">
-    <button class="Revery-chat-plus-btn" type="button">＋</button>
-    <input class="Revery-chat-input" id="messageInput" placeholder="发消息……" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    <button class="send Revery-chat-send-btn" type="submit">↑</button>
-  </form>
+
+  <div class="messages Revery-chat-messages cv-messages" id="messages"></div>
+
+  <!-- 点击加号弹出的多功能菜单 -->
+  <div class="Revery-plus-panel cv-plus-panel" id="plusPanel">
+    <button class="Revery-plus-item cv-plus-item" type="button" data-action="image">
+      <div class="Revery-plus-icon cv-plus-item-icon">🖼️</div>
+      <span class="Revery-plus-label cv-plus-item-label">图片</span>
+    </button>
+    <button class="Revery-plus-item cv-plus-item" type="button" data-action="video">
+      <div class="Revery-plus-icon cv-plus-item-icon">🎥</div>
+      <span class="Revery-plus-label cv-plus-item-label">视频</span>
+    </button>
+    <button class="Revery-plus-item cv-plus-item" type="button" data-action="sticker">
+      <div class="Revery-plus-icon cv-plus-item-icon">🐱</div>
+      <span class="Revery-plus-label cv-plus-item-label">表情包</span>
+    </button>
+  </div>
+
+  <div class="Revery-chat-footer cv-footer-panel">
+    <form class="composer Revery-chat-composer cv-footer pudding-online-input-row" id="composer">
+      <div class="Revery-chat-func-wrap">
+        <button class="Revery-chat-plus-btn cv-func-btn" id="plusBtn" type="button">＋</button>
+      </div>
+      <div class="Revery-chat-input-shell cv-input-shell">
+        <input class="Revery-chat-input cv-input" id="messageInput" placeholder="发消息……" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <div class="Revery-chat-action-wrap cv-action-wrap">
+        <button class="send Revery-chat-send-btn cv-send-btn" id="sendBtn" type="submit" title="发送消息">↑</button>
+        <button class="send Revery-chat-api-btn cv-api-btn" id="apiReplyBtn" type="button" title="请求API回复">✨</button>
+      </div>
+    </form>
+  </div>
 </section>
 <div class="modal" id="apiModal"><div class="sheet"><h2>API 与模型</h2><div class="field"><label>配置名称</label><input id="apiName" placeholder="例如：默认中转站"></div><div class="field"><label>Base URL</label><input id="apiBase" placeholder="https://example.com/v1"></div><div class="field"><label>API Key</label><input id="apiKey" type="password" placeholder="sk-..."></div><div class="field"><label>模型名称</label><input id="apiModel" placeholder="例如 gpt-5"></div><p class="note">当前原型仅把配置保存在本机浏览器 localStorage。正式上线时应由 VPS 保存服务端密钥，浏览器只持有登录令牌。</p><button class="primary" id="saveApi">保存配置</button><button class="secondary close-modal">取消</button></div></div>
 <div class="modal" id="profileModal"><div class="sheet"><h2>编辑主页</h2><div class="field"><label>主页标题</label><input id="editBrand"></div><div class="field"><label>昵称</label><input id="editName"></div><div class="field"><label>个性签名</label><textarea id="editBio"></textarea></div><div class="field"><label>位置或状态</label><input id="editLocation"></div><div class="field"><label>头像图片网址</label><input id="editAvatar"></div><div class="field"><label>或从本地上传头像</label><input id="editAvatarFile" type="file" accept="image/*"></div><button class="primary" id="saveProfile">保存主页</button><button class="secondary close-modal">取消</button></div></div>
