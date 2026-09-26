@@ -360,25 +360,29 @@
     }
   }
 
-  $('cancelDeleteBtn').onclick = function() {
-    $('deleteConfirmModal').classList.remove('show');
-    pendingDeleteId = null;
-  };
+  if ($('cancelDeleteBtn')) {
+    $('cancelDeleteBtn').onclick = function() {
+      if ($('deleteConfirmModal')) $('deleteConfirmModal').classList.remove('show');
+      pendingDeleteId = null;
+    };
+  }
 
-  $('confirmDeleteBtn').onclick = function() {
-    if (pendingDeleteId) {
-      state.characters = state.characters.filter(function(x) { return x.id !== pendingDeleteId; });
-      if (activeId === pendingDeleteId) {
-        activeId = null;
-        $('chatPage').classList.remove('show');
+  if ($('confirmDeleteBtn')) {
+    $('confirmDeleteBtn').onclick = function() {
+      if (pendingDeleteId) {
+        state.characters = state.characters.filter(function(x) { return x.id !== pendingDeleteId; });
+        if (activeId === pendingDeleteId) {
+          activeId = null;
+          if ($('chatPage')) $('chatPage').classList.remove('show');
+        }
+        save();
+        render();
+        toast('角色卡已删除');
       }
-      save();
-      render();
-      toast('角色卡已删除');
-    }
-    $('deleteConfirmModal').classList.remove('show');
-    pendingDeleteId = null;
-  };
+      if ($('deleteConfirmModal')) $('deleteConfirmModal').classList.remove('show');
+      pendingDeleteId = null;
+    };
+  }
 
   // 绑定 chatList 与 stories 的长按与防误触点击
   function bindLongPressContainer(containerEl, isStories) {
@@ -812,8 +816,10 @@
 })();
   // 屏蔽长按弹出的系统复制/分享/下载浮窗
   window.addEventListener('contextmenu', function(e) {
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-      return;
-    }
-    e.preventDefault();
+    try {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        return;
+      }
+      e.preventDefault();
+    } catch(err){}
   }, { capture: true });
