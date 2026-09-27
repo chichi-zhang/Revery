@@ -324,6 +324,7 @@
 
       if (m.type === 'voice' || m.audioUrl) {
         var durationSec = m.duration || 5;
+        var voiceText = m.text || '';
         innerContentHtml = '<div class="' + bubbleClass + '" data-message-type="voice">' +
           '<div class="voice-bubble-wrap" data-audio-src="' + esc(m.audioUrl || '') + '">' +
             '<button type="button" class="voice-play-btn" aria-label="播放语音">' +
@@ -342,6 +343,7 @@
             '</div>' +
             '<span class="voice-duration-tag">' + durationSec + '"</span>' +
           '</div>' +
+          (voiceText ? '<div class="voice-text-drawer" style="display:none;">' + esc(voiceText) + '</div>' : '') +
         '</div>';
       } else if (m.type === 'image') {
         innerContentHtml = '<div class="' + bubbleClass + '" data-message-type="image">' + quoteHtml + '<img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
@@ -680,7 +682,7 @@
       });
       save();
       renderMessages(c);
-      playAudio(audioUrl);
+      // 收到语音不自动抢播，用户点击播放按钮时才播放；点击语音气泡展开查看文字
       toast('已收到 ' + getCharDisplayName(c) + ' 发来的语音消息 🎵');
     }).catch(function(err) {
       console.error('Voice generation error:', err);
@@ -1795,6 +1797,23 @@
     });
   }
 
+  
+  // 监听回车发消息（支持移动端/PC回车即时响应，零卡顿）
+  if ($('messageInput')) {
+    $('messageInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if ($('composer')) {
+          if (typeof $('composer').requestSubmit === 'function') {
+            $('composer').requestSubmit();
+          } else {
+            $('composer').onsubmit(e);
+          }
+        }
+      }
+    });
+  }
+
   $('composer').onsubmit = function(e) {
     e.preventDefault();
     var text = $('messageInput').value.trim(), c = character(activeId);
@@ -2376,52 +2395,73 @@
 
   
 
-  // 聊天气泡内语音条点击事件委托绑定
+  // 聊天气泡内语音条点击事件委托绑定：区分播放按钮与气泡文字切换
   document.addEventListener('click', function(e) {
+    var playBtn = e.target.closest('.voice-play-btn');
     var voiceWrap = e.target.closest('.voice-bubble-wrap');
-    if (!voiceWrap) return;
-    var audioSrc = voiceWrap.getAttribute('data-audio-src');
-    var isPlaying = voiceWrap.classList.contains('playing');
-    
-    document.querySelectorAll('.voice-bubble-wrap.playing').forEach(function(el) {
-      el.classList.remove('playing');
-      var pIcon = el.querySelector('.voice-pause-icon');
-      var sIcon = el.querySelector('.voice-play-icon');
-      if (pIcon) pIcon.style.display = 'none';
-      if (sIcon) sIcon.style.display = 'block';
-    });
+    var voiceBubble = e.target.closest('.bubble[data-message-type="voice"]');
 
-    if (isPlaying) {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      var p = $('voiceAudioPlayer');
-      if (p) { p.pause(); p.currentTime = 0; }
-      return;
-    }
+    // 1. 如果点击的是播放按钮：控制音频播放与暂停
+    if (playBtn && voiceWrap) {
+      e.stopPropagation();
+      var audioSrc = voiceWrap.getAttribute('data-audio-src');
+      var isPlaying = voiceWrap.classList.contains('playing');
+      
+      document.querySelectorAll('.voice-bubble-wrap.playing').forEach(function(el) {
+        el.classList.remove('playing');
+        var pIcon = el.querySelector('.voice-pause-icon');
+        var sIcon = el.querySelector('.voice-play-icon');
+        if (pIcon) pIcon.style.display = 'none';
+        if (sIcon) sIcon.style.display = 'block';
+      });
 
-    voiceWrap.classList.add('playing');
-    var playIcon = voiceWrap.querySelector('.voice-play-icon');
-    var pauseIcon = voiceWrap.querySelector('.voice-pause-icon');
-    if (playIcon) playIcon.style.display = 'none';
-    if (pauseIcon) pauseIcon.style.display = 'block';
+      if (isPlaying) {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        var p = $('voiceAudioPlayer');
+        if (p) { p.pause(); p.currentTime = 0; }
+        return;
+      }
 
-    if (audioSrc) {
-      var p = $('voiceAudioPlayer');
-      if (p) {
-        p.src = audioSrc;
-        p.play();
-        p.onended = function() {
+      voiceWrap.classList.add('playing');
+      var playIcon = voiceWrap.querySelector('.voice-play-icon');
+      var pauseIcon = voiceWrap.querySelector('.voice-pause-icon');
+      if (playIcon) playIcon.style.display = 'none';
+      if (pauseIcon) pauseIcon.style.display = 'block';
+
+      if (audioSrc) {
+        var p = $('voiceAudioPlayer');
+        if (p) {
+          p.src = audioSrc;
+          p.play();
+          p.onended = function() {
+            voiceWrap.classList.remove('playing');
+            if (playIcon) playIcon.style.display = 'block';
+            if (pauseIcon) pauseIcon.style.display = 'none';
+          };
+        }
+      } else {
+        toast('未配置真实语音接口');
+        setTimeout(function() {
           voiceWrap.classList.remove('playing');
           if (playIcon) playIcon.style.display = 'block';
           if (pauseIcon) pauseIcon.style.display = 'none';
-        };
+        }, 3500);
       }
-    } else {
-      toast('未配置真实语音接口');
-      setTimeout(function() {
-        voiceWrap.classList.remove('playing');
-        if (playIcon) playIcon.style.display = 'block';
-        if (pauseIcon) pauseIcon.style.display = 'none';
-      }, 3500);
+      return;
+    }
+
+    // 2. 如果点击的是除开播放按钮外的语音气泡区域：展开/折叠语音转写文本
+    if (voiceBubble && !playBtn) {
+      var drawer = voiceBubble.querySelector('.voice-text-drawer');
+      if (drawer) {
+        if (drawer.style.display === 'none' || !drawer.style.display) {
+          drawer.style.display = 'block';
+          drawer.classList.add('show');
+        } else {
+          drawer.style.display = 'none';
+          drawer.classList.remove('show');
+        }
+      }
     }
   });
 
