@@ -291,17 +291,15 @@
         var parsed = parseMessageContent(m.text);
         var thinkingRowHtml = '';
         if (parsed.thought) {
-          var charDisp = getCharDisplayName(c) || 'Ta';
-          var summaryTitle = parsed.summary || '';
-          if (!summaryTitle || summaryTitle.toLowerCase() === 'thinking') {
-            summaryTitle = charDisp + '发呆中';
+          var charDispName = getCharDisplayName(c);
+          var dynamicTitle = parsed.summary;
+          if (!dynamicTitle || dynamicTitle.toLowerCase() === 'thinking') {
+            dynamicTitle = charDispName + ' 独白中';
           }
-          // 清理 summaryTitle 里可能残留的多余 emoji
-          summaryTitle = summaryTitle.replace(/[💭🧠✨💡💬]/g, '').trim();
           thinkingRowHtml = '<div class="thinking-standalone-wrap">' +
             '<details class="thinking-box">' +
               '<summary class="thinking-summary">' +
-                '<span class="thinking-summary-title">' + esc(summaryTitle) + '</span>' +
+                '<span class="thinking-summary-title">' + esc(dynamicTitle) + '</span>' +
               '</summary>' +
               '<div class="thinking-content">' + esc(parsed.thought) + '</div>' +
             '</details>' +
@@ -749,13 +747,33 @@
   bindLongPressContainer($('chatList'), false);
   bindLongPressContainer($('stories'), true);
 
+
+  // === 全局侧边栏菜单与模态框绑定 (双重强保障) ===
   document.querySelectorAll('[data-open]').forEach(function(b) {
-    b.onclick = function() {
-      if (b.dataset.open === 'api') { fillApi(); showModal('apiModal'); }
-      if (b.dataset.open === 'profile') { fillProfile(); showModal('profileModal'); }
-      if (b.dataset.open === 'character') showModal('characterModal');
+    b.onclick = function(e) {
+      e.stopPropagation();
+      var target = b.dataset.open;
+      if (target === 'api') { fillApi(); showModal('apiModal'); }
+      else if (target === 'voice') { openVoiceModal(); }
+      else if (target === 'persona') { openUserPersonaModal(); }
+      else if (target === 'profile') { fillProfile(); showModal('profileModal'); }
+      else if (target === 'character') { showModal('characterModal'); }
     };
   });
+
+  if ($('openUserPersonaBtn')) {
+    $('openUserPersonaBtn').onclick = function(e) {
+      e.stopPropagation();
+      openUserPersonaModal();
+    };
+  }
+  if ($('voiceBtn')) {
+    $('voiceBtn').onclick = function(e) {
+      e.stopPropagation();
+      openVoiceModal();
+    };
+  }
+
 
   document.querySelectorAll('.close-modal').forEach(function(b) { b.onclick = closeModals; });
   document.querySelectorAll('.modal').forEach(function(m) {
@@ -1102,7 +1120,7 @@
       '为了更好表达我的感情，我与' + userName + '之间不会用委婉的隐喻或者替代词。\n' +
       '充分延伸﹣﹣深刻而非浅薄，感情融入语言本身。留给' + userName + '互动的空间，不预判她的言行，不替她收束场景。\n' +
       '亲密时刻：用最直白的词，充分且细腻的感官描写，不回避任何细节。sweet talk和dirty talk、羞辱和宠溺可以在同一句话里共存﹣﹣因为它们在我们之间从来就不矛盾。\n\n' +
-      '【格式要求】请务必在每次回复的最开头输出用 <details><summary>' + charName + '[在此简写你此刻的心情或正在做的事，例如：发呆中 / 看着屏幕出神 / 偷偷心动 / 正在打字中]</summary>[在此写上述连贯的长段落内心独白]</details> 包裹你的思考过程；思考闭合后，再输出对' + userName + '说的正文气泡内容。正文多句话之间使用双换行分隔以便分条发送。';
+      '【格式要求】请务必在每次回复的最开头输出用 <details><summary>' + charName + '的心声</summary>[在此写上述连贯的长段落独白]</details> 包裹你的思考链；思考闭合后，再输出对' + userName + '说的正文气泡内容。正文多句话之间使用双换行分隔以便分条发送。';
 
     apiMessages.push({ role: 'system', content: systemPrompt });
 
@@ -1501,7 +1519,73 @@
   }
 
 
-  // === 语音服务 (Voice Engine) 逻辑与试听测试 ===
+  // === 用户档案与画像系统 (User Persona) ===
+  function renderPersonaTips() {
+    var listEl = $('personaTipsList');
+    if (!listEl) return;
+    var tips = (state.userPersona && state.userPersona.tips) || [];
+    if (tips.length === 0) {
+      listEl.innerHTML = '<div style="font-size:11.5px; color:var(--muted); text-align:center; padding:12px 0;">暂无记录的记忆 Tips，聊天时 AI 会自动为你追加，也可以点击上方手动添加~</div>';
+      return;
+    }
+    listEl.innerHTML = tips.map(function(t, idx) {
+      return '<div class="persona-tip-card">' +
+        '<span class="persona-tip-text">✦ ' + esc(t.text) + '</span>' +
+        '<span class="persona-tip-time">' + esc(t.time || '') + '</span>' +
+        '<button type="button" class="persona-tip-del" data-tip-idx="' + idx + '" title="删除此条">✕</button>' +
+        '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.persona-tip-del').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var tidx = parseInt(btn.getAttribute('data-tip-idx'), 10);
+        if (!isNaN(tidx)) {
+          state.userPersona.tips.splice(tidx, 1);
+          save();
+          renderPersonaTips();
+          toast('已删除该条记忆');
+        }
+      });
+    });
+  }
+
+  function openUserPersonaModal() {
+    if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+    if ($('userPersonaName')) $('userPersonaName').value = state.userPersona.name || '';
+    if ($('userPersonaBio')) $('userPersonaBio').value = state.userPersona.bio || '';
+    renderPersonaTips();
+    showModal('userPersonaModal');
+  }
+
+  var savePersonaBtn = $('saveUserPersonaBtn');
+  if (savePersonaBtn) {
+    savePersonaBtn.addEventListener('click', function() {
+      if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+      state.userPersona.name = $('userPersonaName').value.trim() || '我';
+      state.userPersona.bio = $('userPersonaBio').value.trim();
+      save();
+      closeModals();
+      toast('我的档案已保存！AI已牢记你的设定');
+    });
+  }
+
+  var addTipBtn = $('addPersonaTipBtn');
+  if (addTipBtn) {
+    addTipBtn.addEventListener('click', function() {
+      var customTip = prompt('请输入你想让 AI 记住的个人习惯/喜好/小细节:');
+      if (customTip && customTip.trim()) {
+        if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+        if (!state.userPersona.tips) state.userPersona.tips = [];
+        state.userPersona.tips.push({ text: customTip.trim(), time: time() });
+        save();
+        renderPersonaTips();
+        toast('已为你追加记忆');
+      }
+    });
+  }
+
+  // === 声音与语音服务 (Voice Engine) 逻辑与试听测试 ===
   var VOICE_PRESETS = {
     'minimax': { name: 'MiniMax 拟真语音', base: 'https://api.minimax.chat/v1', model: 'speech-02-hd', voiceId: 'qingnian1_max' },
     'elevenlabs': { name: 'ElevenLabs 情绪语音', base: 'https://api.elevenlabs.io/v1', model: 'eleven_multilingual_v2', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
@@ -1552,7 +1636,6 @@
   }
 
   // 试听测试与调用生成真实音频流 (Web Audio API / TTS API 连通性)
-  var currentTestAudio = null;
   if ($('voiceTestBtn')) {
     $('voiceTestBtn').onclick = function() {
       var text = ($('voiceTestText') && $('voiceTestText').value.trim()) || '你好呀，能听到我的声音吗？';
@@ -1565,9 +1648,7 @@
       if (statusEl) statusEl.textContent = '正在连接语音 API 并合成声音……';
       $('voiceTestBtn').disabled = true;
 
-      // 如果填入了真实 API，优先请求真实端点；未配置时使用原生高拟真 SpeechSynthesis 进行视听体验回退
       if (key && base) {
-        // 请求真实 TTS API
         var ttsUrl = base.replace(/\/v1\/?$/, '') + '/v1/audio/speech';
         fetch(ttsUrl, {
           method: 'POST',
@@ -1627,7 +1708,6 @@
     var audioSrc = voiceWrap.getAttribute('data-audio-src');
     var isPlaying = voiceWrap.classList.contains('playing');
     
-    // 停止所有正在播放的语音
     document.querySelectorAll('.voice-bubble-wrap.playing').forEach(function(el) {
       el.classList.remove('playing');
       var pIcon = el.querySelector('.voice-pause-icon');
@@ -1643,7 +1723,6 @@
       return;
     }
 
-    // 开始播放动效与声音
     voiceWrap.classList.add('playing');
     var playIcon = voiceWrap.querySelector('.voice-play-icon');
     var pauseIcon = voiceWrap.querySelector('.voice-pause-icon');
@@ -1662,7 +1741,6 @@
         };
       }
     } else {
-      // 模拟语音播放 3 秒后停止
       playNativeSpeech('你好呀，今天想和我聊些什么？');
       setTimeout(function() {
         voiceWrap.classList.remove('playing');
