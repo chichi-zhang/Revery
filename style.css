@@ -1794,3 +1794,59 @@ html[data-theme="light"] .modal.cv-ins-modal .soft-btn {
   align-items: center !important;
   justify-content: center !important;
 }
+
+/* MCP 工具调用小气泡 */
+.tool-call-wrap {
+  display: block !important;
+  max-width: 100% !important;
+  width: fit-content !important;
+}
+
+.tool-call-box {
+  display: inline-block !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  padding: 4px 10px !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-theme="light"] .tool-call-box {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.tool-call-summary {
+  display: flex !important;
+  align-items: center !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  list-style: none !important;
+}
+
+.tool-call-summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.tool-call-body {
+  margin-top: 6px !important;
+  padding: 8px 10px !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-family: monospace !important;
+  color: var(--text) !important;
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+html[data-theme="light"] .tool-call-body {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
