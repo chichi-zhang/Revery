@@ -1592,3 +1592,192 @@ html[data-theme="light"] .bubble.them .Revery-quote-text {
   background: var(--bg) !important;
   margin-bottom: 0 !important;
 }
+
+/* ==========================================================================
+   高级 INS 黑白灰极简极客美学与半透明毛玻璃全局模态框 (Glassmorphic Luxury)
+   ========================================================================== */
+
+/* 1. 模态框背景遮罩：柔和景深模糊 */
+.modal.cv-ins-modal {
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-theme="light"] .modal.cv-ins-modal {
+  background: rgba(240, 240, 245, 0.5) !important;
+}
+
+/* 2. 模态框主体卡片 (Sheet)：黑白灰半透明毛玻璃、高级光影、微光边界 */
+.modal.cv-ins-modal .sheet,
+.cv-ins-sheet {
+  background: rgba(18, 18, 22, 0.82) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: none !important;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  color: #f2f2f7 !important;
+}
+
+html[data-theme="light"] .modal.cv-ins-modal .sheet,
+html[data-theme="light"] .cv-ins-sheet {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-bottom: none !important;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #1a1a1e !important;
+}
+
+/* 3. 模态框顶部抓手条与标题：极致干净 */
+.cv-sheet-handle {
+  width: 36px !important;
+  height: 4.5px !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-radius: 99px !important;
+  margin: 0 auto 16px !important;
+}
+html[data-theme="light"] .cv-sheet-handle {
+  background: rgba(0, 0, 0, 0.16) !important;
+}
+
+.modal.cv-ins-modal h2 {
+  font-weight: 700 !important;
+  letter-spacing: -0.3px !important;
+  color: #ffffff !important;
+}
+html[data-theme="light"] .modal.cv-ins-modal h2 {
+  color: #111113 !important;
+}
+
+/* 4. 黑白灰 INS 风格表单与输入框 */
+.modal.cv-ins-modal input,
+.modal.cv-ins-modal select,
+.modal.cv-ins-modal textarea {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 11px 13px !important;
+  font-size: 13.5px !important;
+  outline: none !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+  transition: border-color 0.2s, background 0.2s !important;
+}
+.modal.cv-ins-modal input:focus,
+.modal.cv-ins-modal select:focus,
+.modal.cv-ins-modal textarea:focus {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+html[data-theme="light"] .modal.cv-ins-modal input,
+html[data-theme="light"] .modal.cv-ins-modal select,
+html[data-theme="light"] .modal.cv-ins-modal textarea {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: #1c1c20 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+html[data-theme="light"] .modal.cv-ins-modal input:focus,
+html[data-theme="light"] .modal.cv-ins-modal select:focus,
+html[data-theme="light"] .modal.cv-ins-modal textarea:focus {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 5. 按钮系统：经典纯黑白对比度与柔和灰白 */
+.modal.cv-ins-modal .primary,
+.modal.cv-ins-modal button.primary {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: none !important;
+  font-weight: 700 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15) !important;
+  transition: transform 0.15s, opacity 0.15s !important;
+}
+.modal.cv-ins-modal .primary:active {
+  transform: scale(0.98) !important;
+  opacity: 0.9 !important;
+}
+html[data-theme="light"] .modal.cv-ins-modal .primary,
+html[data-theme="light"] .modal.cv-ins-modal button.primary {
+  background: #111113 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+}
+
+.modal.cv-ins-modal .secondary,
+.modal.cv-ins-modal button.secondary,
+.modal.cv-ins-modal .soft-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #e0e0e6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+}
+html[data-theme="light"] .modal.cv-ins-modal .secondary,
+html[data-theme="light"] .modal.cv-ins-modal button.secondary,
+html[data-theme="light"] .modal.cv-ins-modal .soft-btn {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #333338 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 6. 聊天内拟真语音条 (Voice Bubble Item) */
+.voice-bubble-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 140px !important;
+  max-width: 240px !important;
+  padding: 6px 4px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+.voice-play-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.15s, background 0.15s !important;
+}
+.bubble.me .voice-play-btn {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+.voice-wave-bars {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2.5px !important;
+  height: 18px !important;
+}
+.voice-bar-col {
+  flex: 1 !important;
+  height: 6px !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  border-radius: 2px !important;
+  transition: height 0.2s, background 0.2s !important;
+}
+.voice-bubble-wrap.playing .voice-bar-col:nth-child(2n) {
+  animation: waveMotion 0.6s infinite ease-in-out alternate !important;
+}
+.voice-bubble-wrap.playing .voice-bar-col:nth-child(2n+1) {
+  animation: waveMotion 0.45s infinite ease-in-out alternate 0.2s !important;
+}
+@keyframes waveMotion {
+  0% { height: 4px; }
+  100% { height: 18px; }
+}
+.voice-duration-tag {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  opacity: 0.8 !important;
+  font-variant-numeric: tabular-nums !important;
+}
