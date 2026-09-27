@@ -1660,42 +1660,85 @@
       var key = ($('voiceKey') && $('voiceKey').value.trim()) || '';
       var model = ($('voiceModel') && $('voiceModel').value.trim()) || 'speech-02-hd';
       var voiceId = ($('voiceId') && $('voiceId').value.trim()) || 'qingnian1_max';
+      var provider = ($('voicePresetSelect') && $('voicePresetSelect').value) || '';
       var statusEl = $('voiceTestStatus');
 
       if (statusEl) statusEl.textContent = '正在连接语音 API 并合成声音……';
       $('voiceTestBtn').disabled = true;
 
-      if (key && base) {
-        var ttsUrl = base.replace(/\/v1\/?$/, '') + '/v1/audio/speech';
-        fetch(ttsUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + key
-          },
-          body: JSON.stringify({
-            model: model,
-            input: text,
-            voice: voiceId
-          })
-        }).then(function(resp) {
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          return resp.blob();
-        }).then(function(blob) {
-          var audioUrl = URL.createObjectURL(blob);
-          playAudio(audioUrl);
-          if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
-        }).catch(function(err) {
-          if (statusEl) statusEl.textContent = '⚠️ 远端接口提示: ' + err.message + '，启动本地预览播放测试。';
-          playNativeSpeech(text);
-        }).finally(function() {
-          $('voiceTestBtn').disabled = false;
-        });
-      } else {
+      if (!key) {
         if (statusEl) statusEl.textContent = '提示：尚未填入API Key，正在启动本地声线连通性试听……';
         playNativeSpeech(text);
         $('voiceTestBtn').disabled = false;
+        return;
       }
+
+      // 区分提供商路由
+      var isEleven = provider === 'elevenlabs' || base.indexOf('elevenlabs.io') !== -1;
+      var fetchUrl = '';
+      var fetchHeaders = {};
+      var fetchBody = '';
+
+      if (isEleven) {
+        // ElevenLabs 专用 REST 端点
+        var elBase = base ? base.replace(/\/v1\/?$/, '') : 'https://api.elevenlabs.io';
+        var actualVoiceId = voiceId || 'AsKyuFhJ2EuOMhWsc4Xq';
+        fetchUrl = elBase + '/v1/text-to-speech/' + encodeURIComponent(actualVoiceId);
+        fetchHeaders = {
+          'Content-Type': 'application/json',
+          'xi-api-key': key
+        };
+        fetchBody = JSON.stringify({
+          text: text,
+          model_id: model || 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.8
+          }
+        });
+      } else {
+        // 标准 OpenAI /v1/audio/speech 规范接口 (包括聚合中转站、Mossland、自建TTS)
+        var cleanBase = (base || 'https://api.openai.com/v1').replace(/\/audio\/speech\/?$/, '').replace(/\/v1\/?$/, '') + '/v1';
+        fetchUrl = cleanBase + '/audio/speech';
+        fetchHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key
+        };
+        fetchBody = JSON.stringify({
+          model: model || 'tts-1',
+          input: text,
+          voice: voiceId || 'alloy'
+        });
+      }
+
+      fetch(fetchUrl, {
+        method: 'POST',
+        headers: fetchHeaders,
+        body: fetchBody
+      }).then(function(resp) {
+        if (!resp.ok) {
+          return resp.text().then(function(errTxt) {
+            var detail = '';
+            try {
+              var jsonErr = JSON.parse(errTxt);
+              detail = (jsonErr.error && jsonErr.error.message) || jsonErr.message || jsonErr.detail || errTxt;
+            } catch(e) {
+              detail = errTxt;
+            }
+            throw new Error('HTTP ' + resp.status + ' (' + (detail.slice(0, 100)) + ')');
+          });
+        }
+        return resp.blob();
+      }).then(function(blob) {
+        var audioUrl = URL.createObjectURL(blob);
+        playAudio(audioUrl);
+        if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
+      }).catch(function(err) {
+        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message + '。启动本地声线兜底。';
+        playNativeSpeech(text);
+      }).finally(function() {
+        $('voiceTestBtn').disabled = false;
+      });
     };
   }
 
