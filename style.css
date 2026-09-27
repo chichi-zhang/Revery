@@ -1511,3 +1511,84 @@ html[data-theme="light"] .msg-system-pill {
 .persona-tip-del:hover {
   color: #ff5252 !important;
 }
+
+/* === 气泡内引用文字颜色与样式加固（明暗适配与高对比度） === */
+.Revery-quote-snippet,
+.quote-snippet {
+  padding: 6px 10px !important;
+  border-left: 2.5px solid var(--accent) !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+/* 对方气泡里的引用（深色模式与浅色模式） */
+.bubble.them .Revery-quote-snippet,
+.bubble.them .quote-snippet {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-left-color: var(--accent) !important;
+  color: #d1d1d6 !important;
+}
+.bubble.them .Revery-quote-sender {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  opacity: 0.9 !important;
+}
+.bubble.them .Revery-quote-text {
+  color: #b0b0b8 !important;
+}
+
+html[data-theme="light"] .bubble.them .Revery-quote-snippet,
+html[data-theme="light"] .bubble.them .quote-snippet {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #4a4a50 !important;
+}
+html[data-theme="light"] .bubble.them .Revery-quote-sender {
+  color: #1a1a1e !important;
+  font-weight: 700 !important;
+}
+html[data-theme="light"] .bubble.them .Revery-quote-text {
+  color: #55555c !important;
+}
+
+/* 我方气泡里的引用 */
+.bubble.me .Revery-quote-snippet,
+.bubble.me .quote-snippet {
+  background: rgba(0, 0, 0, 0.22) !important;
+  border-left-color: #ffffff !important;
+  color: #f0f0f5 !important;
+}
+.bubble.me .Revery-quote-sender {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+.bubble.me .Revery-quote-text {
+  color: #e0e0ea !important;
+}
+
+/* 修复 3：屏幕最底部全屏沉浸（消灭底部黑色块） */
+#chatPage.page,
+.Revery-chat-page {
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  height: -webkit-fill-available !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--bg) !important;
+}
+
+.cv-footer-panel,
+.Revery-chat-footer {
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  background: var(--bg) !important;
+  margin-bottom: 0 !important;
+}
