@@ -271,38 +271,44 @@
     }
     var charAvatarUrl = esc(c.avatar || fallbackAvatar);
     var userAvatarUrl = esc((state.profile && state.profile.avatar) || fallbackAvatar);
-    var msgSeq = 0;
     var lastTimestampMs = 0;
-    
-    function getMessageMs(msg) {
-      if (msg._ts) return msg._ts;
-      if (msg.time && msg.time.indexOf(':') !== -1) {
-        var parts = msg.time.split(':');
-        var now = new Date();
-        now.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
-        return now.getTime();
+
+    function getMsgTimestamp(m, index) {
+      if (m._ts) return m._ts;
+      if (m.time && typeof m.time === 'string' && m.time.indexOf(':') !== -1) {
+        var parts = m.time.split(':');
+        var h = parseInt(parts[0], 10);
+        var min = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(min)) {
+          // 以当天特定时间为基准，避免都是同一时刻
+          var d = new Date();
+          d.setHours(h, min, 0, 0);
+          return d.getTime() + index * 1000;
+        }
       }
-      return Date.now();
+      return Date.now() + index * 1000;
     }
 
-    $('messages').innerHTML = c.messages.map(function(m, idx) {
-      var curMs = getMessageMs(m);
-      var timeDividerHtml = '';
-      if (idx === 0 || (curMs - lastTimestampMs >= 5 * 60 * 1000)) {
-        lastTimestampMs = curMs;
-        var displayTime = m.time || time();
-        timeDividerHtml = '<div class="msg-time-row"><div class="msg-time-pill">' + esc(displayTime) + '</div></div>';
-      }
-
-      if (m.role === 'system') {
-        return timeDividerHtml + '<div class="msg-system-row"><div class="msg-system-pill">' + esc(m.text) + '</div></div>';
-      }
-      msgSeq++;
-      m._seq = msgSeq;
-
+    var htmlBuffer = '';
+    c.messages.forEach(function(m, idx) {
       var isMe = (m.role === 'user');
       var rowClass = 'msg-row ' + (isMe ? 'me' : 'them');
       var bubbleClass = 'bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai');
+
+      // 5分钟时间戳判断：每条消息和上一条相隔超过5分钟，或者首条消息，插入居中时间条
+      var curMs = getMsgTimestamp(m, idx);
+      var timeStampHtml = '';
+      if (idx === 0 || (curMs - lastTimestampMs >= 5 * 60 * 1000)) {
+        lastTimestampMs = curMs;
+        var displayTime = m.time || time();
+        timeStampHtml = '<div class="msg-time-row"><div class="msg-time-pill">' + esc(displayTime) + '</div></div>';
+      }
+      htmlBuffer += timeStampHtml;
+
+      if (m.role === 'system') {
+        htmlBuffer += '<div class="msg-system-row"><div class="msg-system-pill">' + esc(m.text) + '</div></div>';
+        return;
+      }
 
       var quoteHtml = '';
       if (m.quote) {
@@ -314,40 +320,38 @@
         '</div>';
       }
 
-      var innerHtml = '';
-      
-      // 如果是语音消息 (m.type === 'voice')
+      var innerContentHtml = '';
+
       if (m.type === 'voice' || m.audioUrl) {
         var durationSec = m.duration || 5;
-        innerHtml = '<div class="voice-bubble-wrap" data-audio-src="' + esc(m.audioUrl || '') + '">' +
-          '<button type="button" class="voice-play-btn" aria-label="播放语音">' +
-            '<svg class="voice-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>' +
-            '<svg class="voice-pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>' +
-          '</button>' +
-          '<div class="voice-wave-bars">' +
-            '<div class="voice-bar-col" style="height:6px;"></div>' +
-            '<div class="voice-bar-col" style="height:12px;"></div>' +
-            '<div class="voice-bar-col" style="height:16px;"></div>' +
-            '<div class="voice-bar-col" style="height:8px;"></div>' +
-            '<div class="voice-bar-col" style="height:14px;"></div>' +
-            '<div class="voice-bar-col" style="height:10px;"></div>' +
-            '<div class="voice-bar-col" style="height:15px;"></div>' +
-            '<div class="voice-bar-col" style="height:7px;"></div>' +
+        innerContentHtml = '<div class="' + bubbleClass + '" data-message-type="voice">' +
+          '<div class="voice-bubble-wrap" data-audio-src="' + esc(m.audioUrl || '') + '">' +
+            '<button type="button" class="voice-play-btn" aria-label="播放语音">' +
+              '<svg class="voice-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>' +
+              '<svg class="voice-pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>' +
+            '</button>' +
+            '<div class="voice-wave-bars">' +
+              '<div class="voice-bar-col" style="height:6px;"></div>' +
+              '<div class="voice-bar-col" style="height:12px;"></div>' +
+              '<div class="voice-bar-col" style="height:16px;"></div>' +
+              '<div class="voice-bar-col" style="height:8px;"></div>' +
+              '<div class="voice-bar-col" style="height:14px;"></div>' +
+              '<div class="voice-bar-col" style="height:10px;"></div>' +
+              '<div class="voice-bar-col" style="height:15px;"></div>' +
+              '<div class="voice-bar-col" style="height:7px;"></div>' +
+            '</div>' +
+            '<span class="voice-duration-tag">' + durationSec + '"</span>' +
           '</div>' +
-          '<span class="voice-duration-tag">' + durationSec + '"</span>' +
         '</div>';
-      }
-
-      else if (m.type === 'image') {
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="image">' + quoteHtml + '<img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
+      } else if (m.type === 'image') {
+        innerContentHtml = '<div class="' + bubbleClass + '" data-message-type="image">' + quoteHtml + '<img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
       } else if (m.type === 'file') {
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="file">' + quoteHtml + '<div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
+        innerContentHtml = '<div class="' + bubbleClass + '" data-message-type="file">' + quoteHtml + '<div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
       } else {
         var parsed = parseMessageContent(m.text);
         var thinkingRowHtml = '';
         var charDispName = getCharDisplayName(c);
 
-        // 1. 渲染原生 Thinking：极简小字，长宽自然舒展，无边框气泡感，标题文案：备注 正在烧烤中…
         if (parsed.thought) {
           var dynamicTitle = parsed.summary;
           if (!dynamicTitle || dynamicTitle.toLowerCase() === 'thinking' || dynamicTitle.indexOf('发呆中') !== -1 || dynamicTitle.indexOf('独白中') !== -1) {
@@ -365,7 +369,6 @@
           '</div>';
         }
 
-        // 2. 渲染 MCP 工具调用气泡：小气泡包裹，小扳手 SVG 图标，点击可展开查看工具内容
         if (parsed.tool) {
           var wrenchSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.85; margin-right:4px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>';
           thinkingRowHtml += '<div class="tool-call-wrap" style="margin:3px 0 5px;">' +
@@ -378,6 +381,7 @@
             '</details>' +
           '</div>';
         }
+
         var bodyText = parsed.body || (parsed.thought ? '' : m.text);
         var bodyBubbleHtml = '';
         if (bodyText) {
@@ -386,25 +390,27 @@
           bodyBubbleHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + quoteHtml + '<div class="msg-body">' + esc(m.text) + '</div></div>';
         }
 
-        if (isMe) {
-          return '<div class="' + rowClass + '" data-index="' + idx + '">' +
-            (thinkingRowHtml ? '<div class="msg-col-wrap">' + thinkingRowHtml + bodyBubbleHtml + '</div>' : bodyBubbleHtml) +
-            '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
-            '</div>';
-        } else {
-          return '<div class="' + rowClass + '" data-index="' + idx + '">' +
-            '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
-            (thinkingRowHtml ? '<div class="msg-col-wrap">' + thinkingRowHtml + bodyBubbleHtml + '</div>' : bodyBubbleHtml) +
-            '</div>';
-        }
+        innerContentHtml = (thinkingRowHtml ? '<div class="msg-col-wrap">' + thinkingRowHtml + bodyBubbleHtml + '</div>' : bodyBubbleHtml);
       }
-    }).join('');
+
+      if (isMe) {
+        htmlBuffer += '<div class="' + rowClass + '" data-index="' + idx + '">' +
+          innerContentHtml +
+          '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
+          '</div>';
+      } else {
+        htmlBuffer += '<div class="' + rowClass + '" data-index="' + idx + '">' +
+          '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
+          innerContentHtml +
+          '</div>';
+      }
+    });
+
+    $('messages').innerHTML = htmlBuffer;
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
     bindMessageSwipeListeners(c);
   }
 
-  
-  // 消息向左滑动进行引用
   function bindMessageSwipeListeners(c) {
     var rows = document.querySelectorAll('#messages .msg-row.them');
     rows.forEach(function(row) {
