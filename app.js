@@ -710,6 +710,7 @@
       if (b.dataset.open === 'api') { fillApi(); showModal('apiModal'); }
       if (b.dataset.open === 'profile') { fillProfile(); showModal('profileModal'); }
       if (b.dataset.open === 'character') showModal('characterModal');
+      if (b.dataset.open === 'persona') { openUserPersonaModal(); }
     };
   });
 
@@ -1453,6 +1454,73 @@
       setTimeout(function() {
         window.scrollTo(0, 0);
       }, 100);
+    });
+  }
+
+
+  // === 用户档案与画像系统 (User Persona) ===
+  function renderPersonaTips() {
+    var listEl = $('personaTipsList');
+    if (!listEl) return;
+    var tips = (state.userPersona && state.userPersona.tips) || [];
+    if (tips.length === 0) {
+      listEl.innerHTML = '<div style="font-size:11.5px; color:var(--muted); text-align:center; padding:12px 0;">暂无记录的记忆 Tips，聊天时 AI 会自动为你追加，也可以点击上方手动添加~</div>';
+      return;
+    }
+    listEl.innerHTML = tips.map(function(t, idx) {
+      return '<div class="persona-tip-card">' +
+        '<span class="persona-tip-text">✦ ' + esc(t.text) + '</span>' +
+        '<span class="persona-tip-time">' + esc(t.time || '') + '</span>' +
+        '<button type="button" class="persona-tip-del" data-tip-idx="' + idx + '" title="删除此条">✕</button>' +
+        '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.persona-tip-del').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var tidx = parseInt(btn.getAttribute('data-tip-idx'), 10);
+        if (!isNaN(tidx)) {
+          state.userPersona.tips.splice(tidx, 1);
+          save();
+          renderPersonaTips();
+          toast('已删除该条记忆');
+        }
+      });
+    });
+  }
+
+  function openUserPersonaModal() {
+    if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+    if ($('userPersonaName')) $('userPersonaName').value = state.userPersona.name || '';
+    if ($('userPersonaBio')) $('userPersonaBio').value = state.userPersona.bio || '';
+    renderPersonaTips();
+    showModal('userPersonaModal');
+  }
+
+  var savePersonaBtn = $('saveUserPersonaBtn');
+  if (savePersonaBtn) {
+    savePersonaBtn.addEventListener('click', function() {
+      if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+      state.userPersona.name = $('userPersonaName').value.trim() || '我';
+      state.userPersona.bio = $('userPersonaBio').value.trim();
+      save();
+      closeModals();
+      toast('我的档案已保存！AI已牢记你的设定');
+    });
+  }
+
+  var addTipBtn = $('addPersonaTipBtn');
+  if (addTipBtn) {
+    addTipBtn.addEventListener('click', function() {
+      var customTip = prompt('请输入你想让 AI 记住的个人习惯/喜好/小细节:');
+      if (customTip && customTip.trim()) {
+        if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+        if (!state.userPersona.tips) state.userPersona.tips = [];
+        state.userPersona.tips.push({ text: customTip.trim(), time: time() });
+        save();
+        renderPersonaTips();
+        toast('已为你追加记忆');
+      }
     });
   }
 
