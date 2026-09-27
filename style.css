@@ -1259,12 +1259,32 @@ input, textarea {
 
 
 /* === AI Thinking 独立浮空气泡组件 === */
+/* === 修复 Thinking 折叠对气泡宽度的限制 === */
 .msg-col-wrap {
   display: flex !important;
   flex-direction: column !important;
-  max-width: 82% !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 78% !important;
   align-items: flex-start !important;
   gap: 4px !important;
+}
+
+/* 关键：无论 Thinking 处于折叠还是展开状态，下面的正文气泡均按最合适的最大宽度自然排版，绝不受 Thinking 窄宽度的连带挤压！ */
+.msg-col-wrap .thinking-standalone-wrap {
+  display: block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  align-self: flex-start !important;
+}
+
+.msg-row.me .msg-col-wrap .thinking-standalone-wrap {
+  align-self: flex-end !important;
+}
+
+.msg-col-wrap > .bubble {
+  width: fit-content !important;
+  max-width: 100% !important;
 }
 
 .msg-row.me .msg-col-wrap {
@@ -1741,7 +1761,7 @@ html[data-theme="light"] .modal.cv-ins-modal .soft-btn {
   gap: 10px !important;
   min-width: 140px !important;
   max-width: 240px !important;
-  padding: 6px 4px !important;
+  padding: 1px 2px !important;
   cursor: pointer !important;
   user-select: none !important;
 }
@@ -1914,4 +1934,18 @@ html[data-theme="light"] .msg-time-pill {
 }
 #themePage.show {
   display: flex !important;
+}
+
+
+
+/* === 语音气泡专属极致紧凑尺寸 === */
+.bubble[data-message-type="voice"] {
+  padding: 3px 8px !important;
+}
+.bubble[data-message-type="voice"] .voice-play-btn {
+  width: 28px !important;
+  height: 28px !important;
+}
+.bubble[data-message-type="voice"] .voice-wave-bars {
+  height: 14px !important;
 }
