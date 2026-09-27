@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_95">
+  <link rel="stylesheet" href="style.css?v=20260927_105">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -456,9 +456,78 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_95"></script>
+<script src="app.js?v=20260927_105"></script>
 
 
 
+
+<!-- 全屏主题与外观设置独立全屏页面 (覆盖整个屏幕，非弹窗) -->
+<div id="themePage" class="page">
+  <!-- 顶栏 -->
+  <header class="chat-head cv-header" style="position:sticky; top:0; z-index:10; background:var(--topbar); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--line);">
+    <button type="button" class="icon-btn" id="themePageBackBtn" aria-label="返回">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="chat-title" style="flex:1; text-align:center;">
+      <h2 style="font-size:16px; font-weight:700; margin:0;">全站主题与字体设置</h2>
+      <div class="chat-subtitle" style="font-size:11px; color:var(--muted);">全局生效 · 沉浸统一</div>
+    </div>
+    <div style="width:38px;"></div>
+  </header>
+
+  <div style="flex:1; padding:20px 16px 40px; max-width:520px; width:100%; margin:0 auto; box-sizing:border-box;">
+    
+    <!-- 全局字体体系 -->
+    <div class="cv-group-title" style="font-size:13px; font-weight:700; color:var(--muted); margin:0 0 10px 4px; text-transform:uppercase; letter-spacing:0.5px;">全站主字体 (Global Typography)</div>
+    <div class="cv-card" style="background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:20px;">
+      <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px; line-height:1.5;">选择你最喜欢的全站字体。聊天页面、设置页及所有功能组件将严格统一渲染该字体。</div>
+      <div class="field" style="margin-bottom:12px;">
+        <label style="font-size:12px; font-weight:600; margin-bottom:6px; display:block;">预设优选字体</label>
+        <select id="globalFontSelect" style="width:100%; border:1px solid var(--line); border-radius:12px; background:var(--field); padding:11px; font-size:13.5px; color:var(--text);">
+          <option value="">系统原生默认 (San Francisco / PingFang / Roboto)</option>
+          <option value='"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'>优雅苹方 (PingFang SC · 极简圆润)</option>
+          <option value='"Noto Sans SC", "Source Han Sans CN", sans-serif'>思源黑体 (Noto Sans · 清晰质感)</option>
+          <option value='"LXGW WenKai", "霞鹜文楷", serif'>霞鹜文楷 (文青文艺 · 舒缓手写)</option>
+          <option value='"仓耳今楷", "TsangerJinKai", serif'>仓耳今楷 (中文字体美学)</option>
+          <option value='Georgia, "Songti SC", "SimSun", serif'>衬线古典 (Georgia / 宋体风格)</option>
+          <option value='custom'>自定义字体族 (Custom CSS Font)</option>
+        </select>
+      </div>
+      <div class="field" id="customFontField" style="display:none; margin-bottom:0;">
+        <label style="font-size:12px; font-weight:600; margin-bottom:6px; display:block;">自定义 Font-Family 规则</label>
+        <input id="customFontInput" placeholder='例如: "MyCustomFont", "PingFang SC", sans-serif' style="width:100%; border:1px solid var(--line); border-radius:12px; background:var(--field); padding:10px 12px; font-size:13px;">
+      </div>
+    </div>
+
+    <!-- 气泡与排版细调 -->
+    <div class="cv-group-title" style="font-size:13px; font-weight:700; color:var(--muted); margin:0 0 10px 4px; text-transform:uppercase; letter-spacing:0.5px;">气泡尺寸与文字比例</div>
+    <div class="cv-card" style="background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:20px;">
+      <div class="field" style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <label style="font-size:12px; font-weight:600;">聊天文字字号大小</label>
+          <span id="fontSizeDisplay" style="font-size:12px; color:var(--accent); font-weight:700;">13.5px</span>
+        </div>
+        <input type="range" id="globalFontSizeRange" min="12" max="18" step="0.5" value="13.5" style="width:100%;">
+      </div>
+
+      <div class="field" style="margin-bottom:0;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <label style="font-size:12px; font-weight:600;">气泡圆角弧度</label>
+          <span id="bubbleRadiusDisplay" style="font-size:12px; color:var(--accent); font-weight:700;">12px</span>
+        </div>
+        <input type="range" id="globalBubbleRadiusRange" min="4" max="22" step="1" value="12" style="width:100%;">
+      </div>
+    </div>
+
+    <!-- 全局自定义 CSS 覆盖 -->
+    <div class="cv-group-title" style="font-size:13px; font-weight:700; color:var(--muted); margin:0 0 10px 4px; text-transform:uppercase; letter-spacing:0.5px;">全站级样式注入 (Global CSS)</div>
+    <div class="cv-card" style="background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:24px;">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">在这里编写的 CSS 将作为最高优先级覆盖应用到整个站点的所有页面。</div>
+      <textarea id="globalCustomCss" style="width:100%; height:110px; border:1px solid var(--line); border-radius:12px; background:var(--field); color:var(--text); padding:10px 12px; font-family:monospace; font-size:12px; box-sizing:border-box;" placeholder="例如:&#10;body { letter-spacing: 0.2px; }"></textarea>
+    </div>
+
+    <button type="button" class="primary" id="saveGlobalThemeBtn" style="width:100%; min-height:46px; border-radius:14px; font-size:14px; font-weight:700;">保存全站主题与字体</button>
+  </div>
+</div>
 </body>
 </html>
