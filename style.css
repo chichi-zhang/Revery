@@ -1974,3 +1974,27 @@ html[data-theme="light"] .msg-time-pill {
 .bubble[data-message-type="voice"] .voice-wave-bars {
   height: 14px !important;
 }
+
+
+/* 语音气泡下方可展开的文本内容样式 */
+.voice-text-drawer {
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px dashed rgba(255, 255, 255, 0.22) !important;
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  color: inherit !important;
+  opacity: 0.95 !important;
+  word-break: break-word !important;
+  user-select: text !important;
+  animation: fadeInVoiceText 0.18s ease-out !important;
+}
+
+.bubble.them .voice-text-drawer {
+  border-top-color: var(--line, rgba(255, 255, 255, 0.12)) !important;
+}
+
+@keyframes fadeInVoiceText {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 0.95; transform: translateY(0); }
+}
