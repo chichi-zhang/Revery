@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_10">
+  <link rel="stylesheet" href="style.css?v=20260927_15">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -97,6 +97,13 @@
   </div>
 
   <div class="Revery-chat-footer cv-footer-panel">
+      <div class="Revery-quote-bar" id="chatQuoteBar" style="display:none;">
+    <div class="Revery-quote-content">
+      <div class="Revery-quote-label">引用消息</div>
+      <div class="Revery-quote-text" id="chatQuoteText"></div>
+    </div>
+    <button type="button" class="Revery-quote-close" id="chatQuoteCloseBtn">✕</button>
+  </div>
     <form class="composer Revery-chat-composer cv-footer pudding-online-input-row" id="composer">
       <div class="Revery-chat-func-wrap">
         <button class="Revery-chat-plus-btn cv-func-btn" id="plusBtn" type="button" title="更多功能"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
@@ -321,7 +328,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_10"></script>
+<script src="app.js?v=20260927_15"></script>
 
 
 
