@@ -2350,3 +2350,147 @@
       e.preventDefault();
     } catch(err){}
   }, { capture: true });
+
+
+
+  // =========================================================================
+  // 全屏主题与外观独立页面 (全屏沉浸，非弹窗，全局生效)
+  // =========================================================================
+  function applyGlobalThemeSettings(settings) {
+    if (!settings) {
+      try { settings = JSON.parse(localStorage.getItem('Revery_global_theme_settings')) || {}; } catch(e) { settings = {}; }
+    }
+    var font = settings.font || '';
+    var fontSize = settings.fontSize || '13.5';
+    var bubbleRadius = settings.bubbleRadius || '12';
+    var customCss = settings.customCss || '';
+
+    var styleEl = document.getElementById('Revery-global-dynamic-theme-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'Revery-global-dynamic-theme-style';
+      document.head.appendChild(styleEl);
+    }
+
+    var cssRules = '';
+    if (font) {
+      cssRules += 'html, body, button, input, textarea, select, .bubble, .chat-title, .msg-body { font-family: ' + font + ' !important; }\n';
+    }
+    if (fontSize) {
+      cssRules += '.bubble, .msg-body { font-size: ' + fontSize + 'px !important; }\n';
+    }
+    if (bubbleRadius) {
+      cssRules += '.bubble, .cv-bubble-user, .cv-bubble-ai { border-radius: ' + bubbleRadius + 'px !important; }\n';
+    }
+    if (customCss) {
+      cssRules += '\n/* 用户自定义全局 CSS */\n' + customCss + '\n';
+    }
+
+    styleEl.innerHTML = cssRules;
+  }
+
+  function initGlobalThemePage() {
+    var settings = {};
+    try { settings = JSON.parse(localStorage.getItem('Revery_global_theme_settings')) || {}; } catch(e) {}
+    
+    if ($('globalFontSelect')) {
+      var curFont = settings.font || '';
+      var matched = false;
+      for (var i = 0; i < $('globalFontSelect').options.length; i++) {
+        if ($('globalFontSelect').options[i].value === curFont) {
+          $('globalFontSelect').selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched && curFont) {
+        $('globalFontSelect').value = 'custom';
+        if ($('customFontField')) $('customFontField').style.display = 'block';
+        if ($('customFontInput')) $('customFontInput').value = curFont;
+      } else {
+        if ($('customFontField')) $('customFontField').style.display = 'none';
+      }
+    }
+
+    if ($('globalFontSizeRange')) {
+      $('globalFontSizeRange').value = settings.fontSize || '13.5';
+      if ($('fontSizeDisplay')) $('fontSizeDisplay').textContent = (settings.fontSize || '13.5') + 'px';
+    }
+
+    if ($('globalBubbleRadiusRange')) {
+      $('globalBubbleRadiusRange').value = settings.bubbleRadius || '12';
+      if ($('bubbleRadiusDisplay')) $('bubbleRadiusDisplay').textContent = (settings.bubbleRadius || '12') + 'px';
+    }
+
+    if ($('globalCustomCss')) {
+      $('globalCustomCss').value = settings.customCss || '';
+    }
+  }
+
+  // 绑定侧边栏“主题与聊天气泡”按钮直达全屏新页面
+  if ($('globalThemeBtn')) {
+    $('globalThemeBtn').onclick = function(e) {
+      e.stopPropagation();
+      closeDrawer();
+      initGlobalThemePage();
+      if ($('themePage')) $('themePage').classList.add('show');
+    };
+  }
+
+  if ($('themePageBackBtn')) {
+    $('themePageBackBtn').onclick = function() {
+      if ($('themePage')) $('themePage').classList.remove('show');
+    };
+  }
+
+  if ($('globalFontSelect')) {
+    $('globalFontSelect').onchange = function() {
+      if (this.value === 'custom') {
+        if ($('customFontField')) $('customFontField').style.display = 'block';
+      } else {
+        if ($('customFontField')) $('customFontField').style.display = 'none';
+      }
+    };
+  }
+
+  if ($('globalFontSizeRange')) {
+    $('globalFontSizeRange').oninput = function() {
+      if ($('fontSizeDisplay')) $('fontSizeDisplay').textContent = this.value + 'px';
+    };
+  }
+
+  if ($('globalBubbleRadiusRange')) {
+    $('globalBubbleRadiusRange').oninput = function() {
+      if ($('bubbleRadiusDisplay')) $('bubbleRadiusDisplay').textContent = this.value + 'px';
+    };
+  }
+
+  if ($('saveGlobalThemeBtn')) {
+    $('saveGlobalThemeBtn').onclick = function() {
+      var font = '';
+      if ($('globalFontSelect')) {
+        if ($('globalFontSelect').value === 'custom') {
+          font = ($('customFontInput') && $('customFontInput').value.trim()) || '';
+        } else {
+          font = $('globalFontSelect').value;
+        }
+      }
+      var fontSize = ($('globalFontSizeRange') && $('globalFontSizeRange').value) || '13.5';
+      var bubbleRadius = ($('globalBubbleRadiusRange') && $('globalBubbleRadiusRange').value) || '12';
+      var customCss = ($('globalCustomCss') && $('globalCustomCss').value) || '';
+
+      var settings = {
+        font: font,
+        fontSize: fontSize,
+        bubbleRadius: bubbleRadius,
+        customCss: customCss
+      };
+      localStorage.setItem('Revery_global_theme_settings', JSON.stringify(settings));
+      applyGlobalThemeSettings(settings);
+      if ($('themePage')) $('themePage').classList.remove('show');
+      toast('全站主题与字体设置已全局生效！');
+    };
+  }
+
+  // 页面启动时自载入全站主题
+  try { applyGlobalThemeSettings(); } catch(e) {}
