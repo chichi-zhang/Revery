@@ -1,9 +1,9 @@
-const CACHE = 'revery-v33';
+const CACHE = 'revery-v34';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=20260927_05',
-  './app.js?v=20260927_05',
+  './style.css?v=20260927_08',
+  './app.js?v=20260927_08',
   './manifest.webmanifest',
   './icon.svg'
 ];
