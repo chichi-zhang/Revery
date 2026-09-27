@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_70">
+  <link rel="stylesheet" href="style.css?v=20260927_80">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -80,7 +80,11 @@
       <div class="Revery-plus-icon cv-plus-item-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
       <span class="Revery-plus-label cv-plus-item-label">文件</span>
     </button>
-    <button class="Revery-plus-item cv-plus-item" type="button" data-action="reroll">
+        <button class="Revery-plus-item cv-plus-item" type="button" data-action="voice">
+      <div class="Revery-plus-icon cv-plus-item-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></div>
+      <span class="Revery-plus-label cv-plus-item-label">语音回复</span>
+    </button>
+<button class="Revery-plus-item cv-plus-item" type="button" data-action="reroll">
       <div class="Revery-plus-icon cv-plus-item-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
       <span class="Revery-plus-label cv-plus-item-label">重roll</span>
     </button>
@@ -128,36 +132,7 @@
     </div>
     <div class="sub" style="font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.5;">配置角色聊天时的真实语音播放引擎。支持 MiniMax、ElevenLabs、Mossland 官方/中转语音，支持当场生成试听。</div>
 
-    <div class="field" style="margin-bottom:12px;">
-      <label style="font-size:12px; font-weight:600;">语音平台预设</label>
-      <select id="voicePresetSelect" style="width:100%; border:1px solid var(--line); border-radius:12px; background:var(--field); padding:11px; font-size:13.5px; color:var(--text);">
-        <option value="">-- 选择语音预设 --</option>
-        <option value="minimax">MiniMax (开放平台拟真语音 / speech-02-hd)</option>
-        <option value="elevenlabs">ElevenLabs (全球拟真情绪语音 / eleven_multilingual_v2)</option>
-        <option value="mossland">Mossland (莫斯大陆官方/聚合中转)</option>
-        <option value="custom">自定义语音接口 (Custom TTS)</option>
-      </select>
-    </div>
-
-    <div class="field" style="margin-bottom:12px;">
-      <label style="font-size:12px; font-weight:600;">Base URL (语音接口地址)</label>
-      <input id="voiceBase" placeholder="https://api.minimax.chat/v1 或 https://api.elevenlabs.io/v1">
-    </div>
-
-    <div class="field" style="margin-bottom:12px;">
-      <label style="font-size:12px; font-weight:600;">API Key (语音密钥 / Bearer Token)</label>
-      <input id="voiceKey" type="password" placeholder="sk-...">
-    </div>
-
-    <div class="field" style="margin-bottom:12px;" id="voiceGroupIdField">
-      <label style="font-size:12px; font-weight:600;">Group ID / 组织代码 (MiniMax 官方账号必填，第三方中转可留空)</label>
-      <input id="voiceGroupId" placeholder="例如: 1888888888888888888">
-    </div>
-
-    <div class="field" style="margin-bottom:12px;">
-      <label style="font-size:12px; font-weight:600;">Voice ID / 音色代码 (例如: qingnian1_max, AsKyuFhJ2EuOMhWsc4Xq)</label>
-      <input id="voiceId" placeholder="例如: qingnian1_max / 专属音色ID">
-    </div>
+    
 
     <div class="field" style="margin-bottom:14px;">
       <label style="font-size:12px; font-weight:600;">语音模型名称 (Model)</label>
@@ -400,6 +375,34 @@
         </div>
       </div>
 
+      
+      <!-- 分组：角色专属声音绑定 (Voice ID) -->
+      <div class="cv-group-title">角色专属声音设置</div>
+      <div class="cv-card cv-voice-card">
+        <div class="cv-cell-row">
+          <div class="cv-cell-label" style="font-size:13px; font-weight:600;">专属声音平台与模型</div>
+          <span style="font-size:11px; color:var(--muted);">选择此角色的发音声线</span>
+        </div>
+        <div style="padding:10px 14px 4px;">
+          <select id="chatCustomVoicePreset" style="width:100%; border:1px solid var(--line); border-radius:10px; background:var(--field); padding:9px 10px; font-size:13px; color:var(--text); margin-bottom:10px;">
+            <option value="">-- 使用全局默认引擎配置 --</option>
+            <option value="minimax_qingnian">MiniMax 青年音 (qingnian1_max)</option>
+            <option value="minimax_shaonian">MiniMax 少年音 (shaonian1_max)</option>
+            <option value="minimax_dashu">MiniMax 成熟大叔 (dashu1_max)</option>
+            <option value="minimax_shaonv">MiniMax 少女音 (shaonv1_max)</option>
+            <option value="minimax_yujie">MiniMax 御姐音 (yujie1_max)</option>
+            <option value="eleven_alder">ElevenLabs 磁性青年 (AsKyuFhJ2EuOMhWsc4Xq)</option>
+            <option value="eleven_adam">ElevenLabs 沉稳男声 (Adam / pNInz6obpgDQGcFmaJgB)</option>
+            <option value="eleven_rachel">ElevenLabs 柔和女声 (Rachel / 21m00Tcm4TlvDq8ikWAM)</option>
+            <option value="custom">自定义输入专属音色代码</option>
+          </select>
+        </div>
+        <div class="cv-input-row" style="border-top:1px solid var(--line);">
+          <div class="cv-input-prefix">音色 ID</div>
+          <input id="chatCustomVoiceId" class="cv-inline-input" placeholder="例如: qingnian1_max 或专属音色代码 (留空跟随全局默认)...">
+        </div>
+      </div>
+
       <!-- 分组四：自定义 CSS (折叠/极简卡片) -->
       <div class="cv-group-title">高级定制</div>
       <div class="cv-card cv-css-card">
@@ -432,7 +435,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_70"></script>
+<script src="app.js?v=20260927_80"></script>
 
 
 
