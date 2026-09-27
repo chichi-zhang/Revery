@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_05">
+  <link rel="stylesheet" href="style.css?v=20260927_08">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -111,7 +111,31 @@
     </form>
   </div>
 </section>
-<div class="modal" id="apiModal"><div class="sheet"><h2>API 与模型</h2><div class="field"><label>配置名称</label><input id="apiName" placeholder="例如：默认中转站"></div><div class="field"><label>Base URL</label><input id="apiBase" placeholder="https://example.com/v1"></div><div class="field"><label>API Key</label><input id="apiKey" type="password" placeholder="sk-..."></div><div class="field"><label>模型名称</label><input id="apiModel" placeholder="例如 gpt-5"></div><p class="note">当前原型仅把配置保存在本机浏览器 localStorage。正式上线时应由 VPS 保存服务端密钥，浏览器只持有登录令牌。</p><button class="primary" id="saveApi">保存配置</button><button class="secondary close-modal">取消</button></div></div>
+<div class="modal" id="apiModal"><div class="sheet" style="border-radius:24px 24px 0 0; max-height:90dvh; overflow-y:auto;">
+  <h2>API 与模型设置</h2>
+  <div class="field">
+    <label>快速预设选择 (一键载入常见中转站/直连)</label>
+    <select id="apiPresetSelect" style="width:100%; border:1px solid var(--line); border-radius:11px; background:var(--field); padding:11px; font-size:13.5px;">
+      <option value="">-- 选择预设或快速填充 --</option>
+      <option value="gemai">格脉 (api.gemai.cc) / gpt-image-2 & gpt-4o</option>
+      <option value="openai">OpenAI 官方 (api.openai.com) / gpt-4o</option>
+      <option value="deepseek">DeepSeek 官方 (api.deepseek.com) / deepseek-chat</option>
+      <option value="siliconflow">硅基流动 (api.siliconflow.cn) / deepseek-v3</option>
+      <option value="openrouter">OpenRouter (openrouter.ai/api/v1)</option>
+      <option value="custom">自定义中转站</option>
+    </select>
+  </div>
+  <div class="field"><label>配置名称</label><input id="apiName" placeholder="例如：我的主力中转站"></div>
+  <div class="field"><label>Base URL (需包含 /v1)</label><input id="apiBase" placeholder="https://api.openai.com/v1"></div>
+  <div class="field"><label>API Key (密钥)</label><input id="apiKey" type="password" placeholder="sk-..."></div>
+  <div class="field"><label>模型名称 (Model)</label><input id="apiModel" placeholder="例如 gpt-4o / deepseek-chat"></div>
+  <div class="field" style="display:flex; gap:10px; margin-top:6px;">
+    <button type="button" class="soft-btn" id="testApiBtn" style="flex:1; min-height:40px; border-radius:11px;">⚡ 连通性测试</button>
+  </div>
+  <p class="note" style="margin-top:10px;">密钥仅加密保存在本地浏览器中，绝不上报。在聊天中发送消息或点击魔法棒星光即可实时调用 AI 回答。</p>
+  <button class="primary" id="saveApi" style="min-height:44px; border-radius:12px; margin-top:8px;">保存 API 配置</button>
+  <button class="secondary close-modal" style="min-height:40px; border-radius:12px;">取消</button>
+</div></div>
 <div class="modal" id="profileModal"><div class="sheet"><h2>编辑主页</h2><div class="field"><label>主页标题</label><input id="editBrand"></div><div class="field"><label>昵称</label><input id="editName"></div><div class="field"><label>个性签名</label><textarea id="editBio"></textarea></div><div class="field"><label>位置或状态</label><input id="editLocation"></div><div class="field"><label>头像图片网址</label><input id="editAvatar"></div><div class="field"><label>或从本地上传头像</label><input id="editAvatarFile" type="file" accept="image/*"></div><button class="primary" id="saveProfile">保存主页</button><button class="secondary close-modal">取消</button></div></div>
 <div class="modal" id="characterModal"><div class="sheet"><h2>新建角色卡</h2><div class="field"><label>角色名称</label><input id="charName" placeholder="角色名称"></div><div class="field"><label>头像图片网址</label><input id="charAvatar" placeholder="可留空"></div><div class="field"><label>或从本地上传头像</label><input id="charAvatarFile" type="file" accept="image/*"></div><div class="field"><label>开场白</label><textarea id="charGreeting" placeholder="角色第一次出现时说的话"></textarea></div><div class="field"><label>角色设定</label><textarea id="charPrompt" placeholder="人设、关系、语言风格……"></textarea></div><button class="primary" id="saveCharacter">添加到聊天列表</button><button class="secondary close-modal">取消</button></div></div>
 
@@ -130,17 +154,17 @@
 
     <div class="cv-sheet-body">
       <!-- 分组一：头像设置 (iOS 卡片样式) -->
-      <div class="cv-group-title">头像设置</div>
+      <div class="cv-group-title">角色头像设置</div>
       <div class="cv-card cv-avatar-card">
         <div class="cv-avatar-row">
           <div class="cv-avatar-preview-wrap">
-            <img id="chatCustomAvatarPreview" src="" alt="头像预览" class="cv-avatar-img">
+            <img id="chatCustomAvatarPreview" src="" alt="角色头像预览" class="cv-avatar-img">
             <label for="chatCustomAvatarFile" class="cv-avatar-badge" title="从相册更换">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </label>
           </div>
           <div class="cv-avatar-action-box">
-            <div class="cv-avatar-primary-text">角色专属头像</div>
+            <div class="cv-avatar-primary-text">Ta的专属头像</div>
             <div class="cv-avatar-sub-text">支持相册本地选取或填入图片链接</div>
             <div class="cv-avatar-btns">
               <label for="chatCustomAvatarFile" class="cv-pill-btn">
@@ -154,7 +178,36 @@
 
         <div class="cv-input-row">
           <div class="cv-input-prefix">URL</div>
-          <input id="chatCustomAvatar" class="cv-inline-input" placeholder="粘贴外链图片地址 (可选)...">
+          <input id="chatCustomAvatar" class="cv-inline-input" placeholder="粘贴角色外链图片地址...">
+        </div>
+      </div>
+
+      <!-- 我方头像设置 (新增：本地选取 + URL) -->
+      <div class="cv-group-title">我方头像设置</div>
+      <div class="cv-card cv-avatar-card">
+        <div class="cv-avatar-row">
+          <div class="cv-avatar-preview-wrap">
+            <img id="chatCustomUserAvatarPreview" src="" alt="我方头像预览" class="cv-avatar-img">
+            <label for="chatCustomUserAvatarFile" class="cv-avatar-badge" title="从相册更换我方头像">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </label>
+          </div>
+          <div class="cv-avatar-action-box">
+            <div class="cv-avatar-primary-text">我的专属头像</div>
+            <div class="cv-avatar-sub-text">更换你在对话和全站使用的头像</div>
+            <div class="cv-avatar-btns">
+              <label for="chatCustomUserAvatarFile" class="cv-pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                从相册选择
+              </label>
+              <input type="file" id="chatCustomUserAvatarFile" accept="image/*" style="display:none;">
+            </div>
+          </div>
+        </div>
+
+        <div class="cv-input-row">
+          <div class="cv-input-prefix">URL</div>
+          <input id="chatCustomUserAvatar" class="cv-inline-input" placeholder="粘贴我方外链图片地址...">
         </div>
       </div>
 
@@ -263,7 +316,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_05"></script>
+<script src="app.js?v=20260927_08"></script>
 
 
 
