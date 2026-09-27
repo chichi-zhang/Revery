@@ -1246,3 +1246,70 @@ input, textarea {
   position: relative !important;
   z-index: 10000 !important;
 }
+
+
+/* === AI Thinking 思考折叠组件 === */
+.thinking-box {
+  margin-bottom: 8px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
+  font-size: 12.5px !important;
+  line-height: 1.5 !important;
+}
+
+html[data-theme="light"] .thinking-box {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.thinking-summary {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  font-weight: 600 !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  font-size: 12px !important;
+  outline: none !important;
+  list-style: none !important;
+}
+
+.thinking-summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.thinking-summary::before {
+  content: '▶' !important;
+  font-size: 9px !important;
+  transition: transform 0.2s ease !important;
+  display: inline-block !important;
+  opacity: 0.7 !important;
+}
+
+.thinking-box[open] > .thinking-summary::before {
+  transform: rotate(90deg) !important;
+}
+
+.thinking-content {
+  padding: 6px 12px 10px !important;
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06) !important;
+  opacity: 0.9 !important;
+}
+
+html[data-theme="light"] .thinking-content {
+  border-top: 1px dashed rgba(0, 0, 0, 0.06) !important;
+}
+
+.msg-body {
+  width: 100% !important;
+}
