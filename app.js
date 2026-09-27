@@ -18,6 +18,20 @@
       ]
     },
     api: { name: '格脉中转', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
+    voice: {
+      provider: 'minimax',
+      name: 'MiniMax 拟真语音',
+      base: 'https://api.minimax.chat/v1',
+      key: '',
+      model: 'speech-02-hd',
+      voiceId: 'qingnian1_max'
+    },
+    voicePresets: [
+      { id: 'minimax', name: 'MiniMax (开放平台拟真语音)', base: 'https://api.minimax.chat/v1', key: '', model: 'speech-02-hd', voiceId: 'qingnian1_max' },
+      { id: 'elevenlabs', name: 'ElevenLabs (全球情绪拟真语音)', base: 'https://api.elevenlabs.io/v1', key: '', model: 'eleven_multilingual_v2', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
+      { id: 'mossland', name: 'Mossland (莫斯大陆官方/聚合)', base: 'https://api.mossland.com/v1', key: '', model: 'tts-1', voiceId: 'alloy' },
+      { id: 'custom', name: '自定义语音接口', base: '', key: '', model: '', voiceId: '' }
+    ],
     apiPresets: [
       { name: '格脉中转 (gemai)', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
       { name: 'OpenAI 官方', base: 'https://api.openai.com/v1', key: '', model: 'gpt-4o' },
@@ -37,6 +51,7 @@
       if (x && x.profile && Array.isArray(x.characters)) {
         x.settings = x.settings || { theme: 'dark' };
         if (!x.api) x.api = clone(defaults.api);
+        if (!x.voice) x.voice = clone(defaults.voice);
         if (!x.userPersona) x.userPersona = clone(defaults.userPersona);
         // 清理旧演示数据
         var dummyIds = ['xie', 'daddy', 'sheng'];
@@ -245,7 +260,30 @@
       }
 
       var innerHtml = '';
-      if (m.type === 'image') {
+      
+      // 如果是语音消息 (m.type === 'voice')
+      if (m.type === 'voice' || m.audioUrl) {
+        var durationSec = m.duration || 5;
+        innerHtml = '<div class="voice-bubble-wrap" data-audio-src="' + esc(m.audioUrl || '') + '">' +
+          '<button type="button" class="voice-play-btn" aria-label="播放语音">' +
+            '<svg class="voice-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>' +
+            '<svg class="voice-pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>' +
+          '</button>' +
+          '<div class="voice-wave-bars">' +
+            '<div class="voice-bar-col" style="height:6px;"></div>' +
+            '<div class="voice-bar-col" style="height:12px;"></div>' +
+            '<div class="voice-bar-col" style="height:16px;"></div>' +
+            '<div class="voice-bar-col" style="height:8px;"></div>' +
+            '<div class="voice-bar-col" style="height:14px;"></div>' +
+            '<div class="voice-bar-col" style="height:10px;"></div>' +
+            '<div class="voice-bar-col" style="height:15px;"></div>' +
+            '<div class="voice-bar-col" style="height:7px;"></div>' +
+          '</div>' +
+          '<span class="voice-duration-tag">' + durationSec + '"</span>' +
+        '</div>';
+      }
+
+      else if (m.type === 'image') {
         innerHtml = '<div class="' + bubbleClass + '" data-message-type="image">' + quoteHtml + '<img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
       } else if (m.type === 'file') {
         innerHtml = '<div class="' + bubbleClass + '" data-message-type="file">' + quoteHtml + '<div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
@@ -1461,6 +1499,178 @@
       }, 100);
     });
   }
+
+
+  // === 语音服务 (Voice Engine) 逻辑与试听测试 ===
+  var VOICE_PRESETS = {
+    'minimax': { name: 'MiniMax 拟真语音', base: 'https://api.minimax.chat/v1', model: 'speech-02-hd', voiceId: 'qingnian1_max' },
+    'elevenlabs': { name: 'ElevenLabs 情绪语音', base: 'https://api.elevenlabs.io/v1', model: 'eleven_multilingual_v2', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
+    'mossland': { name: 'Mossland 官方/聚合语音', base: 'https://api.mossland.com/v1', model: 'tts-1', voiceId: 'alloy' },
+    'custom': { name: '自定义接口', base: '', model: '', voiceId: '' }
+  };
+
+  function fillVoice() {
+    var v = state.voice || defaults.voice;
+    if ($('voiceBase')) $('voiceBase').value = v.base || '';
+    if ($('voiceKey')) $('voiceKey').value = v.key || '';
+    if ($('voiceId')) $('voiceId').value = v.voiceId || '';
+    if ($('voiceModel')) $('voiceModel').value = v.model || '';
+    if ($('voicePresetSelect')) $('voicePresetSelect').value = v.provider || '';
+    if ($('voiceTestStatus')) $('voiceTestStatus').textContent = '';
+  }
+
+  function openVoiceModal() {
+    fillVoice();
+    showModal('voiceModal');
+  }
+
+  if ($('voicePresetSelect')) {
+    $('voicePresetSelect').onchange = function() {
+      var val = this.value;
+      if (VOICE_PRESETS[val]) {
+        var p = VOICE_PRESETS[val];
+        if (p.base) $('voiceBase').value = p.base;
+        if (p.model) $('voiceModel').value = p.model;
+        if (p.voiceId) $('voiceId').value = p.voiceId;
+        toast('已载入 ' + p.name + ' 预设');
+      }
+    };
+  }
+
+  if ($('saveVoiceBtn')) {
+    $('saveVoiceBtn').onclick = function() {
+      if (!state.voice) state.voice = clone(defaults.voice);
+      state.voice.provider = $('voicePresetSelect').value || 'custom';
+      state.voice.base = $('voiceBase').value.trim();
+      state.voice.key = $('voiceKey').value.trim();
+      state.voice.voiceId = $('voiceId').value.trim();
+      state.voice.model = $('voiceModel').value.trim();
+      save();
+      closeModals();
+      toast('声音与语音 API 设置已保存！');
+    };
+  }
+
+  // 试听测试与调用生成真实音频流 (Web Audio API / TTS API 连通性)
+  var currentTestAudio = null;
+  if ($('voiceTestBtn')) {
+    $('voiceTestBtn').onclick = function() {
+      var text = ($('voiceTestText') && $('voiceTestText').value.trim()) || '你好呀，能听到我的声音吗？';
+      var base = ($('voiceBase') && $('voiceBase').value.trim()) || '';
+      var key = ($('voiceKey') && $('voiceKey').value.trim()) || '';
+      var model = ($('voiceModel') && $('voiceModel').value.trim()) || 'speech-02-hd';
+      var voiceId = ($('voiceId') && $('voiceId').value.trim()) || 'qingnian1_max';
+      var statusEl = $('voiceTestStatus');
+
+      if (statusEl) statusEl.textContent = '正在连接语音 API 并合成声音……';
+      $('voiceTestBtn').disabled = true;
+
+      // 如果填入了真实 API，优先请求真实端点；未配置时使用原生高拟真 SpeechSynthesis 进行视听体验回退
+      if (key && base) {
+        // 请求真实 TTS API
+        var ttsUrl = base.replace(/\/v1\/?$/, '') + '/v1/audio/speech';
+        fetch(ttsUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key
+          },
+          body: JSON.stringify({
+            model: model,
+            input: text,
+            voice: voiceId
+          })
+        }).then(function(resp) {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          return resp.blob();
+        }).then(function(blob) {
+          var audioUrl = URL.createObjectURL(blob);
+          playAudio(audioUrl);
+          if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
+        }).catch(function(err) {
+          if (statusEl) statusEl.textContent = '⚠️ 远端接口提示: ' + err.message + '，启动本地预览播放测试。';
+          playNativeSpeech(text);
+        }).finally(function() {
+          $('voiceTestBtn').disabled = false;
+        });
+      } else {
+        if (statusEl) statusEl.textContent = '提示：尚未填入API Key，正在启动本地声线连通性试听……';
+        playNativeSpeech(text);
+        $('voiceTestBtn').disabled = false;
+      }
+    };
+  }
+
+  function playNativeSpeech(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 1.05;
+      window.speechSynthesis.speak(u);
+    } else {
+      toast('浏览器暂不支持本地语音');
+    }
+  }
+
+  function playAudio(url) {
+    var player = $('voiceAudioPlayer');
+    if (!player) return;
+    player.src = url;
+    player.play().catch(function() {});
+  }
+
+  // 聊天气泡内语音条点击事件委托绑定
+  document.addEventListener('click', function(e) {
+    var voiceWrap = e.target.closest('.voice-bubble-wrap');
+    if (!voiceWrap) return;
+    var audioSrc = voiceWrap.getAttribute('data-audio-src');
+    var isPlaying = voiceWrap.classList.contains('playing');
+    
+    // 停止所有正在播放的语音
+    document.querySelectorAll('.voice-bubble-wrap.playing').forEach(function(el) {
+      el.classList.remove('playing');
+      var pIcon = el.querySelector('.voice-pause-icon');
+      var sIcon = el.querySelector('.voice-play-icon');
+      if (pIcon) pIcon.style.display = 'none';
+      if (sIcon) sIcon.style.display = 'block';
+    });
+
+    if (isPlaying) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      var p = $('voiceAudioPlayer');
+      if (p) { p.pause(); p.currentTime = 0; }
+      return;
+    }
+
+    // 开始播放动效与声音
+    voiceWrap.classList.add('playing');
+    var playIcon = voiceWrap.querySelector('.voice-play-icon');
+    var pauseIcon = voiceWrap.querySelector('.voice-pause-icon');
+    if (playIcon) playIcon.style.display = 'none';
+    if (pauseIcon) pauseIcon.style.display = 'block';
+
+    if (audioSrc) {
+      var p = $('voiceAudioPlayer');
+      if (p) {
+        p.src = audioSrc;
+        p.play();
+        p.onended = function() {
+          voiceWrap.classList.remove('playing');
+          if (playIcon) playIcon.style.display = 'block';
+          if (pauseIcon) pauseIcon.style.display = 'none';
+        };
+      }
+    } else {
+      // 模拟语音播放 3 秒后停止
+      playNativeSpeech('你好呀，今天想和我聊些什么？');
+      setTimeout(function() {
+        voiceWrap.classList.remove('playing');
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+      }, 3500);
+    }
+  });
 
   save();
   applyTheme();
