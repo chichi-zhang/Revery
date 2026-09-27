@@ -197,10 +197,13 @@
     return (state.profile && state.profile.name) || '你';
   }
 
+  var renderedHistoryLimit = 25; // 默认轻量渲染窗口：只渲染最近25条
+
   function openChat(id) {
     var c = character(id);
     if (!c) return;
     activeId = id;
+    renderedHistoryLimit = 25; // 每次进入房间重置为25条，保证秒开丝滑
     c.unread = 0;
     c.avatarMode = c.avatarMode || 'both';
     save();
@@ -289,8 +292,26 @@
       return Date.now() + index * 1000;
     }
 
+    var totalMsgCount = c.messages.length;
+    var startIdx = 0;
+    if (totalMsgCount > renderedHistoryLimit) {
+      startIdx = totalMsgCount - renderedHistoryLimit;
+    }
+
     var htmlBuffer = '';
-    c.messages.forEach(function(m, idx) {
+
+    // 顶部小狗回忆录：纯文本浅灰色小字，无气泡包裹，点击翻看上一页
+    if (startIdx > 0) {
+      htmlBuffer += '<div class="dog-memories-bar-row">' +
+        '<button type="button" class="dog-memories-text-btn" id="loadMoreHistoryBtn">' +
+          '小狗回忆录' +
+        '</button>' +
+      '</div>';
+    }
+
+    var visibleMessages = c.messages.slice(startIdx);
+    visibleMessages.forEach(function(m, vIdx) {
+      var idx = startIdx + vIdx;
       var isMe = (m.role === 'user');
       var rowClass = 'msg-row ' + (isMe ? 'me' : 'them');
       var bubbleClass = 'bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai');
@@ -408,8 +429,31 @@
       }
     });
 
-    $('messages').innerHTML = htmlBuffer;
-    setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
+    var msgsContainer = $('messages');
+    var prevScrollHeight = msgsContainer ? msgsContainer.scrollHeight : 0;
+    var prevScrollTop = msgsContainer ? msgsContainer.scrollTop : 0;
+
+    msgsContainer.innerHTML = htmlBuffer;
+
+    if (window._retainsScrollPosition) {
+      window._retainsScrollPosition = false;
+      var newScrollHeight = msgsContainer.scrollHeight;
+      msgsContainer.scrollTop = newScrollHeight - prevScrollHeight;
+    } else {
+      setTimeout(function() { msgsContainer.scrollTop = msgsContainer.scrollHeight; }, 0);
+    }
+
+    // 绑定「小狗回忆录」点击翻看上一页逻辑（微信式原地展开更早记录）
+    var loadBtn = $('loadMoreHistoryBtn');
+    if (loadBtn) {
+      loadBtn.onclick = function(e) {
+        e.stopPropagation();
+        renderedHistoryLimit += 25; // 每次翻看上一页多载入25条
+        window._retainsScrollPosition = true; // 保持当前视觉位置不跳动
+        renderMessages(c);
+      };
+    }
+
     bindMessageSwipeListeners(c);
   }
 
