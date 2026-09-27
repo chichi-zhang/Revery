@@ -2547,6 +2547,32 @@
 })();
 
 
+// 本地字体：仅使用浏览器本地存储，不上传文件
+(function initLocalFontPicker() {
+  var FONT_KEY = 'Revery_local_font_data_v1', FONT_NAME = 'ReveryUploadedFont';
+  function byId(id) { return document.getElementById(id); }
+  function applyLocalFont(dataUrl, fileName) {
+    var style=document.getElementById('Revery-local-font-style');
+    if (!style) { style=document.createElement('style'); style.id='Revery-local-font-style'; document.head.appendChild(style); }
+    style.textContent='@font-face{font-family:"'+FONT_NAME+'";src:url("'+dataUrl+'");font-display:swap;}html,body,button,input,textarea,select,.bubble,.chat-title,.msg-body{font-family:"'+FONT_NAME+'",sans-serif !important;}';
+    var status=byId('customFontFileStatus'), choose=byId('chooseCustomFontBtn'), remove=byId('removeCustomFontBtn');
+    if (status) status.textContent='已加载本地字体：'+(fileName||'自定义字体')+'（仅保存在本机浏览器）';
+    if (choose) choose.textContent='更换本地字体文件';
+    if (remove) remove.style.display='block';
+  }
+  window.addEventListener('DOMContentLoaded', function() {
+    var choose=byId('chooseCustomFontBtn'), file=byId('customFontFile'), remove=byId('removeCustomFontBtn');
+    if (choose && file) choose.addEventListener('click', function(){file.click();});
+    if (file) file.addEventListener('change', function(){
+      var selected=file.files&&file.files[0]; if(!selected)return;
+      if(!/\.(ttf|otf|woff2?)$/i.test(selected.name)){toast('请选择 TTF、OTF、WOFF 或 WOFF2 字体文件');file.value='';return;}
+      var reader=new FileReader(); reader.onload=function(){try{localStorage.setItem(FONT_KEY,JSON.stringify({name:selected.name,dataUrl:reader.result}));applyLocalFont(reader.result,selected.name);toast('本地字体已加载，全站预览生效');}catch(e){toast('字体文件较大，浏览器本地空间不足');}}; reader.readAsDataURL(selected);
+    });
+    if(remove)remove.addEventListener('click',function(){localStorage.removeItem(FONT_KEY);var style=document.getElementById('Revery-local-font-style');if(style)style.remove();var status=byId('customFontFileStatus');if(status)status.textContent='字体只保存在当前浏览器本地，不会上传到服务器。';if(choose)choose.textContent='选择字体文件（TTF / OTF / WOFF / WOFF2）';remove.style.display='none';toast('已移除本地字体');});
+    try{var saved=JSON.parse(localStorage.getItem(FONT_KEY)||'null');if(saved&&saved.dataUrl)applyLocalFont(saved.dataUrl,saved.name);}catch(e){}
+  });
+})();
+
 // 主题页面在 index.html 中位于 app.js 之后，因此只延后绑定主题页自己的控件
 window.addEventListener('DOMContentLoaded', function() {
   var themeBtn = document.getElementById('globalThemeBtn');
