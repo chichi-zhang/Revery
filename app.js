@@ -145,7 +145,41 @@
     $('chatPage').classList.add('show');
   }
 
-    function renderMessages(c) {
+    
+  // 解析消息中的思考过程与正文
+  function parseMessageContent(text) {
+    var raw = String(text || '');
+    var thought = '';
+    var body = raw;
+
+    // 匹配 <details><summary>...</summary>...</details>
+    var detailsMatch = body.match(/<details[\s\S]*?<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/i);
+    if (detailsMatch) {
+      thought = detailsMatch[2].trim();
+      body = body.replace(detailsMatch[0], '').trim();
+      return { thought: thought, summary: detailsMatch[1].trim() || 'Thinking', body: body };
+    }
+
+    // 匹配 <think>...</think> 或 <thinking>...</thinking>
+    var thinkMatch = body.match(/<(think|thinking)>([\s\S]*?)<\/\1>/i);
+    if (thinkMatch) {
+      thought = thinkMatch[2].trim();
+      body = body.replace(thinkMatch[0], '').trim();
+      return { thought: thought, summary: 'Thinking', body: body };
+    }
+
+    // 匹配 ```thinking ... ```
+    var codeThinkMatch = body.match(/```thinking\s*([\s\S]*?)```/i);
+    if (codeThinkMatch) {
+      thought = codeThinkMatch[1].trim();
+      body = body.replace(codeThinkMatch[0], '').trim();
+      return { thought: thought, summary: 'Thinking', body: body };
+    }
+
+    return { thought: '', summary: '', body: body };
+  }
+
+  function renderMessages(c) {
     var svgFileSmall = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
     var mode = c.avatarMode || 'both';
     var msgsEl = $('messages');
@@ -166,7 +200,16 @@
       } else if (m.type === 'file') {
         innerHtml = '<div class="' + bubbleClass + '" data-message-type="file"><div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
       } else {
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + esc(m.text) + '</div>';
+        var parsed = parseMessageContent(m.text);
+        var thinkingHtml = '';
+        if (parsed.thought) {
+          thinkingHtml = '<details class="thinking-box">' +
+            '<summary class="thinking-summary">' + esc(parsed.summary || 'Thinking') + '</summary>' +
+            '<div class="thinking-content">' + esc(parsed.thought) + '</div>' +
+            '</details>';
+        }
+        var bodyHtml = '<div class="msg-body">' + esc(parsed.body || (parsed.thought ? '' : m.text)) + '</div>';
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + thinkingHtml + bodyHtml + '</div>';
       }
 
       if (isMe) {
@@ -653,6 +696,69 @@
     };
   }
 
+  // 拉取可用模型列表
+  if ($('fetchModelsBtn')) {
+    $('fetchModelsBtn').onclick = function() {
+      var base = $('apiBase').value.trim();
+      var key = $('apiKey').value.trim();
+      if (!base || !key) {
+        toast('请先填写 Base URL 和 API Key');
+        return;
+      }
+      var btn = $('fetchModelsBtn');
+      btn.textContent = '正在拉取……';
+      btn.disabled = true;
+
+      var cleanBase = base.replace(/\/+$/, '');
+      fetch(cleanBase + '/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' + key
+        }
+      }).then(function(resp) {
+        btn.textContent = '🔄 拉取可用模型';
+        btn.disabled = false;
+        if (!resp.ok) {
+          throw new Error('HTTP ' + resp.status);
+        }
+        return resp.json();
+      }).then(function(data) {
+        var list = [];
+        if (data && Array.isArray(data.data)) {
+          list = data.data.map(function(item) { return item.id; });
+        } else if (Array.isArray(data)) {
+          list = data.map(function(item) { return item.id || item.name; });
+        }
+        if (!list.length) {
+          toast('拉取成功但模型列表为空');
+          return;
+        }
+        list.sort();
+        var box = $('modelSelectBox');
+        var select = $('fetchedModelSelect');
+        if (box && select) {
+          select.innerHTML = '<option value="">-- 点击选择模型快速填入 --</option>' +
+            list.map(function(m) {
+              return '<option value="' + esc(m) + '">' + esc(m) + '</option>';
+            }).join('');
+          box.style.display = 'block';
+          select.onchange = function() {
+            if (this.value) {
+              $('apiModel').value = this.value;
+              toast('已填入模型: ' + this.value);
+            }
+          };
+        }
+        toast('成功拉取到 ' + list.length + ' 个可用模型！');
+      }).catch(function(err) {
+        btn.textContent = '🔄 拉取可用模型';
+        btn.disabled = false;
+        toast('❌ 拉取失败: ' + (err.message || '网络或接口不支持'));
+      });
+    };
+  }
+
+
   
   function applyChatCustomTheme(c) {
     var styleTag = $('ReveryCustomChatStyle');
@@ -867,7 +973,14 @@
     }).then(function(data) {
       var replyText = '';
       if (data && data.choices && data.choices[0] && data.choices[0].message) {
-        replyText = data.choices[0].message.content || '';
+        var msgObj = data.choices[0].message;
+        var content = msgObj.content || '';
+        var reasoning = msgObj.reasoning_content || msgObj.reasoning || '';
+        if (reasoning && !content.includes('<think>')) {
+          replyText = '<think>\n' + reasoning.trim() + '\n</think>\n' + content;
+        } else {
+          replyText = content;
+        }
       }
       if (!replyText) replyText = '（AI 未返回内容）';
       
