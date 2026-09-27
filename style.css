@@ -1313,3 +1313,96 @@ html[data-theme="light"] .thinking-content {
 .msg-body {
   width: 100% !important;
 }
+
+
+/* === 系统消息样式 (居中优雅灰底胶囊) === */
+.msg-system-row {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 12px 0 8px !important;
+}
+
+.msg-system-pill {
+  padding: 4px 14px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--muted) !important;
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+  text-align: center !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  user-select: none !important;
+}
+
+html[data-theme="light"] .msg-system-pill {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* === 消息气泡内的引用渲染 === */
+.quote-snippet {
+  margin-bottom: 6px !important;
+  padding: 4px 8px !important;
+  border-left: 2.5px solid var(--accent) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-radius: 4px !important;
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  line-height: 1.35 !important;
+}
+
+.bubble.me .quote-snippet {
+  background: rgba(0, 0, 0, 0.18) !important;
+  border-left-color: #ffffff !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* === 底部输入框上方的引用预览条 === */
+.Revery-quote-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: var(--panel2);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  gap: 8px;
+}
+
+.Revery-quote-content {
+  flex: 1;
+  min-width: 0;
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+}
+
+.Revery-quote-label {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.Revery-quote-text {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+
+.Revery-quote-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.msg-row.swiping {
+  transition: transform 0.15s ease-out;
+}
