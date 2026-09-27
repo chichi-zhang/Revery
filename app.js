@@ -911,7 +911,7 @@
       if (!f || !c) return;
       if (f.size > 25 * 1024 * 1024) { toast('图片请小于 25MB'); return; }
       
-      // 异步快速轻量压缩，毫秒级上屏
+      // 异步快速轻量压缩，毫秒级上屏；用户发图后不生成任何默认假回复，必须由用户点击右下角续写/API回复才触发！
       compressImageFast(f, 1280, 1280, 0.82).then(function(compressedUrl) {
         c.messages.push({
           role: 'user',
@@ -921,15 +921,6 @@
         });
         save();
         renderMessages(c);
-        setTimeout(function() {
-          c.messages.push({
-            role: 'assistant',
-            text: '好看。只要是你拍的发来的，我都喜欢看。',
-            time: time()
-          });
-          save();
-          renderMessages(c);
-        }, 600);
       }).catch(function(err) {
         toast('图片处理失败: ' + (err.message || err));
       });
@@ -952,18 +943,7 @@
       });
       save();
       renderMessages(c);
-      render();
       toast('已发送文件: ' + f.name);
-      setTimeout(function() {
-        c.messages.push({
-          role: 'assistant',
-          text: '文件已收到（' + f.name + '），正在为你分析和归档中……',
-          time: time()
-        });
-        save();
-        renderMessages(c);
-        render();
-      }, 800);
     };
   }
   // 通话按钮
@@ -1624,8 +1604,21 @@
       if (m.quote) {
         prefix = '[引用了' + (m.quote.sender === 'user' ? '用户' : '你') + '的消息: "' + m.quote.text + '"]\n';
       }
+
+      // 如果是图片消息，组装多模态 Vision 格式 (OpenAI vision 协议：text + image_url)
+      if (m.type === 'image' && m.mediaUrl) {
+        var textPart = prefix + (m.text ? m.text : '（用户发送了一张图片，请仔细观察这张图片的内容并结合人设进行自然生动的回应）');
+        apiMessages.push({
+          role: m.role || 'user',
+          content: [
+            { type: 'text', text: textPart },
+            { type: 'image_url', image_url: { url: m.mediaUrl } }
+          ]
+        });
+        return;
+      }
+
       var contentText = prefix + (m.text || '');
-      if (m.type === 'image') contentText += ' [图片]';
       if (m.type === 'file') contentText += ' [文件: ' + (m.fileName || '') + ']';
 
       // 剔除旧回复里冗长的思考部分，只保留正文给API上文
