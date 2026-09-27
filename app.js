@@ -218,33 +218,48 @@
   function parseMessageContent(text) {
     var raw = String(text || '');
     var thought = '';
+    var summary = '';
     var body = raw;
+    var tool = null;
 
-    // 匹配 <details><summary>...</summary>...</details>
+    // 1. 匹配 <details><summary>...</summary>...</details>
     var detailsMatch = body.match(/<details[\s\S]*?<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/i);
     if (detailsMatch) {
       thought = detailsMatch[2].trim();
+      summary = detailsMatch[1].trim() || '';
       body = body.replace(detailsMatch[0], '').trim();
-      return { thought: thought, summary: detailsMatch[1].trim() || 'Thinking', body: body };
+    } else {
+      // 匹配原生 <think>...</think> 或 <thinking>...</thinking>
+      var thinkMatch = body.match(/<(think|thinking)>([\s\S]*?)<\/\1>/i);
+      if (thinkMatch) {
+        thought = thinkMatch[2].trim();
+        summary = '';
+        body = body.replace(thinkMatch[0], '').trim();
+      } else {
+        // 匹配 ```thinking ... ```
+        var codeThinkMatch = body.match(/```thinking\s*([\s\S]*?)```/i);
+        if (codeThinkMatch) {
+          thought = codeThinkMatch[1].trim();
+          summary = '';
+          body = body.replace(codeThinkMatch[0], '').trim();
+        }
+      }
     }
 
-    // 匹配 <think>...</think> 或 <thinking>...</thinking>
-    var thinkMatch = body.match(/<(think|thinking)>([\s\S]*?)<\/\1>/i);
-    if (thinkMatch) {
-      thought = thinkMatch[2].trim();
-      body = body.replace(thinkMatch[0], '').trim();
-      return { thought: thought, summary: 'Thinking', body: body };
+    // 2. 匹配工具调用 / MCP 标签：<tool_call ...> 或 <tool name="...">
+    var toolMatch = body.match(/<tool(?:_call)?[^>]*name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/tool(?:_call)?>/i);
+    if (toolMatch) {
+      tool = { name: toolMatch[1], content: toolMatch[2].trim() };
+      body = body.replace(toolMatch[0], '').trim();
+    } else {
+      var simpleToolMatch = body.match(/<tool(?:_call)?>([\s\S]*?)<\/tool(?:_call)?>/i);
+      if (simpleToolMatch) {
+        tool = { name: 'MCP 工具', content: simpleToolMatch[1].trim() };
+        body = body.replace(simpleToolMatch[0], '').trim();
+      }
     }
 
-    // 匹配 ```thinking ... ```
-    var codeThinkMatch = body.match(/```thinking\s*([\s\S]*?)```/i);
-    if (codeThinkMatch) {
-      thought = codeThinkMatch[1].trim();
-      body = body.replace(codeThinkMatch[0], '').trim();
-      return { thought: thought, summary: 'Thinking', body: body };
-    }
-
-    return { thought: '', summary: '', body: body };
+    return { thought: thought, summary: summary, tool: tool, body: body };
   }
 
   function renderMessages(c) {
@@ -309,18 +324,36 @@
       } else {
         var parsed = parseMessageContent(m.text);
         var thinkingRowHtml = '';
+        var charDispName = getCharDisplayName(c);
+
+        // 1. 渲染原生 Thinking：极简小字，长宽自然舒展，无边框气泡感，标题文案：备注 正在烧烤中…
         if (parsed.thought) {
-          var charDispName = getCharDisplayName(c);
           var dynamicTitle = parsed.summary;
-          if (!dynamicTitle || dynamicTitle.toLowerCase() === 'thinking') {
-            dynamicTitle = charDispName + ' 独白中';
+          if (!dynamicTitle || dynamicTitle.toLowerCase() === 'thinking' || dynamicTitle.indexOf('发呆中') !== -1 || dynamicTitle.indexOf('独白中') !== -1) {
+            dynamicTitle = charDispName + ' 正在烧烤中…';
+          } else {
+            dynamicTitle = charDispName + ' 正在烧烤中… (' + dynamicTitle + ')';
           }
-          thinkingRowHtml = '<div class="thinking-standalone-wrap">' +
+          thinkingRowHtml += '<div class="thinking-standalone-wrap">' +
             '<details class="thinking-box">' +
               '<summary class="thinking-summary">' +
                 '<span class="thinking-summary-title">' + esc(dynamicTitle) + '</span>' +
               '</summary>' +
               '<div class="thinking-content">' + esc(parsed.thought) + '</div>' +
+            '</details>' +
+          '</div>';
+        }
+
+        // 2. 渲染 MCP 工具调用气泡：小气泡包裹，小扳手 SVG 图标，点击可展开查看工具内容
+        if (parsed.tool) {
+          var wrenchSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.85; margin-right:4px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>';
+          thinkingRowHtml += '<div class="tool-call-wrap" style="margin:3px 0 5px;">' +
+            '<details class="tool-call-box">' +
+              '<summary class="tool-call-summary">' +
+                wrenchSvg +
+                '<span>' + esc(charDispName) + ' 正在使用工具 ' + esc(parsed.tool.name) + '…</span>' +
+              '</summary>' +
+              '<div class="tool-call-body">' + esc(parsed.tool.content) + '</div>' +
             '</details>' +
           '</div>';
         }
