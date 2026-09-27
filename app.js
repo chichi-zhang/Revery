@@ -1700,6 +1700,19 @@
     };
   }
 
+    function playAudio(url) {
+    var player = $('voiceAudioPlayer');
+    if (!player) {
+      player = document.createElement('audio');
+      player.id = 'voiceAudioPlayer';
+      document.body.appendChild(player);
+    }
+    player.src = url;
+    return player.play().catch(function(e) {
+      console.warn('Audio play prevented:', e);
+    });
+  }
+
   if ($('voiceTestBtn')) {
     $('voiceTestBtn').onclick = function() {
       var text = ($('voiceTestText') && $('voiceTestText').value.trim()) || '你好呀，能听到我的声音吗？';
@@ -1720,9 +1733,11 @@
       }
 
       // 提取 GroupId (如果有)
-      var groupId = '';
-      var gMatch = base.match(/[?&]GroupId=([^&#]+)/i);
-      if (gMatch) groupId = gMatch[1];
+      var groupId = ($('voiceGroupId') && $('voiceGroupId').value.trim()) || '';
+      if (!groupId) {
+        var gMatch = base.match(/[?&]GroupId=([^&#]+)/i);
+        if (gMatch) groupId = gMatch[1];
+      }
 
       // 判断提供商
       var isMinimax = provider === 'minimax' || base.indexOf('minimax') !== -1;
