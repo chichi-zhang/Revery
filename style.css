@@ -1912,7 +1912,8 @@ html[data-theme="light"] .msg-time-pill {
   color: #77777c !important;
 }
 
-/* === 全屏主题与外观独立页面 (非模态弹窗) === */
+
+/* === 全屏主题与外观独立沉浸新页面 (全屏页面滑入体验) === */
 #themePage {
   position: fixed !important;
   top: 0 !important;
@@ -1925,16 +1926,40 @@ html[data-theme="light"] .msg-time-pill {
   height: 100% !important;
   height: 100dvh !important;
   background: var(--bg) !important;
-  z-index: 9999 !important;
-  display: none;
+  color: var(--text) !important;
+  z-index: 100000 !important; /* 绝对最高层级，盖过一切侧边栏与模态框 */
+  display: flex !important;
   flex-direction: column !important;
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
 }
+
 #themePage.show {
-  display: flex !important;
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
+
+/* 主题页面的顶栏吸顶高斯模糊效果 */
+#themePage header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+  background: var(--topbar) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid var(--line) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: calc(var(--safe-top, 0px) + 8px) 14px 10px !important;
+  box-sizing: border-box !important;
+}
+
 
 
 
