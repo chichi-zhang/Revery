@@ -463,6 +463,34 @@
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
 
+  function getDetailedTimeInfo() {
+    var d = new Date();
+    var year = d.getFullYear();
+    var month = d.getMonth() + 1;
+    var date = d.getDate();
+    var hours = d.getHours();
+    var minutes = d.getMinutes();
+    var weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    var weekday = weekdays[d.getDay()];
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    var timeStr = pad(hours) + ':' + pad(minutes);
+    
+    var period = '凌晨';
+    if (hours >= 5 && hours < 9) period = '清晨/早晨';
+    else if (hours >= 9 && hours < 12) period = '上午';
+    else if (hours >= 12 && hours < 14) period = '中午';
+    else if (hours >= 14 && hours < 18) period = '下午/傍晚';
+    else if (hours >= 18 && hours < 23) period = '晚上';
+    else period = '深夜/凌晨';
+
+    return {
+      formatted: year + '年' + month + '月' + date + '日 ' + weekday + ' ' + timeStr + ' (' + period + ')',
+      dateStr: year + '年' + month + '月' + date + '日',
+      timeStr: timeStr,
+      period: period
+    };
+  }
+
   $('menuBtn').onclick = openDrawer;
   
   var CHAR_VOICE_PRESETS = {
@@ -1539,6 +1567,11 @@
     var userName = getUserCallingName(c);
     var charName = getCharDisplayName(c);
     var userGaveRemark = c.remarkName ? ('用户私下为你设置的爱称/备注是: 「' + c.remarkName + '」；') : '';
+        var nowTimeInfo = getDetailedTimeInfo();
+    systemPrompt += '\n【此刻客观现实时间与环境感知】\n' +
+      '- 当前确切现实时间: ' + nowTimeInfo.formatted + '\n' +
+      '- 处于时段: ' + nowTimeInfo.period + '\n' +
+      '- 时间感知法则: 你清楚知晓此刻是' + nowTimeInfo.dateStr + '的' + nowTimeInfo.period + '（' + nowTimeInfo.timeStr + '）。在心声思考（Thinking）和对话回复中，必须自然融合当下时段的真实生理感受（如清晨初醒的慵懒、午后的微乏、深夜的困倦或安静沉寂），对话切合真实作息与当下时间节点，绝不表现出对现实时间与日期的模糊或错乱。\n\n';
     systemPrompt += '\n[当前身份环境] 你的官方角色名是: ' + (c.name || charName) + '；' + userGaveRemark + '当前顶栏显示名称是: ' + charName + '；用户的名字/称呼是: ' + userName + '。请严格保持该人设。在对话和心声中，你知道用户对你的称谓。';
 
     // 核心注入：用户画像与长期记忆 (User Persona)
