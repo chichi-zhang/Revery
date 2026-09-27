@@ -1604,10 +1604,30 @@
 
   // === 声音与语音服务 (Voice Engine) 逻辑与试听测试 ===
   var VOICE_PRESETS = {
-    'minimax': { name: 'MiniMax 拟真语音', base: 'https://api.minimax.chat/v1', model: 'speech-02-hd', voiceId: 'qingnian1_max' },
-    'elevenlabs': { name: 'ElevenLabs 情绪语音', base: 'https://api.elevenlabs.io/v1', model: 'eleven_multilingual_v2', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
-    'mossland': { name: 'Mossland 官方/聚合语音', base: 'https://api.mossland.com/v1', model: 'tts-1', voiceId: 'alloy' },
-    'custom': { name: '自定义接口', base: '', model: '', voiceId: '' }
+    'minimax': { 
+      name: 'MiniMax 官方开放平台 (t2a_v2)', 
+      base: 'https://api.minimax.chat/v1/t2a_v2', 
+      model: 'speech-02-hd', 
+      voiceId: 'qingnian1_max' 
+    },
+    'elevenlabs': { 
+      name: 'ElevenLabs 官方情绪拟真语音', 
+      base: 'https://api.elevenlabs.io/v1', 
+      model: 'eleven_multilingual_v2', 
+      voiceId: '7klAjt7mJgqnarhbNXDG' 
+    },
+    'mossland': { 
+      name: 'Mossland 官方/聚合语音', 
+      base: 'https://api.mossland.com/v1', 
+      model: 'tts-1', 
+      voiceId: 'alloy' 
+    },
+    'custom': { 
+      name: '自定义接口 (OpenAI /v1/audio/speech 规范)', 
+      base: '', 
+      model: '', 
+      voiceId: '' 
+    }
   };
 
   function fillVoice() {
@@ -1630,11 +1650,152 @@
       var val = this.value;
       if (VOICE_PRESETS[val]) {
         var p = VOICE_PRESETS[val];
-        if (p.base) $('voiceBase').value = p.base;
-        if (p.model) $('voiceModel').value = p.model;
-        if (p.voiceId) $('voiceId').value = p.voiceId;
+        if (p.base && $('voiceBase')) $('voiceBase').value = p.base;
+        if (p.model && $('voiceModel')) $('voiceModel').value = p.model;
+        if (p.voiceId && $('voiceId')) $('voiceId').value = p.voiceId;
         toast('已载入 ' + p.name + ' 预设');
       }
+    };
+  }
+
+  if ($('voiceTestBtn')) {
+    $('voiceTestBtn').onclick = function() {
+      var text = ($('voiceTestText') && $('voiceTestText').value.trim()) || '你好呀，能听到我的声音吗？';
+      var base = ($('voiceBase') && $('voiceBase').value.trim()) || '';
+      var key = ($('voiceKey') && $('voiceKey').value.trim()) || '';
+      var model = ($('voiceModel') && $('voiceModel').value.trim()) || 'speech-02-hd';
+      var voiceId = ($('voiceId') && $('voiceId').value.trim()) || 'qingnian1_max';
+      var provider = ($('voicePresetSelect') && $('voicePresetSelect').value) || '';
+      var statusEl = $('voiceTestStatus');
+
+      if (statusEl) statusEl.textContent = '正在连接语音 API 并合成声音……';
+      $('voiceTestBtn').disabled = true;
+
+      if (!key) {
+        if (statusEl) statusEl.textContent = '提示：尚未填入API Key，正在启动本地声线连通性试听……';
+        playNativeSpeech(text);
+        $('voiceTestBtn').disabled = false;
+        return;
+      }
+
+      var isMinimax = provider === 'minimax' || base.indexOf('minimax') !== -1;
+      var isEleven = provider === 'elevenlabs' || base.indexOf('elevenlabs.io') !== -1;
+      var fetchUrl = '';
+      var fetchHeaders = {};
+      var fetchBody = '';
+
+      if (isMinimax) {
+        // MiniMax 官方专属 REST 端点：/v1/t2a_v2
+        var mmBase = base || 'https://api.minimax.chat/v1/t2a_v2';
+        if (mmBase.indexOf('/t2a_v2') === -1) {
+          mmBase = mmBase.replace(/\/v1\/?$/, '') + '/v1/t2a_v2';
+        }
+        fetchUrl = mmBase;
+        fetchHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key
+        };
+        fetchBody = JSON.stringify({
+          model: model || 'speech-02-hd',
+          text: text,
+          stream: false,
+          voice_setting: {
+            voice_id: voiceId || 'qingnian1_max',
+            speed: 1,
+            vol: 1,
+            pitch: 0,
+            emotion: 'neutral'
+          },
+          audio_setting: {
+            sample_rate: 32000,
+            bitrate: 128000,
+            format: 'mp3',
+            channel: 1
+          }
+        });
+      } else if (isEleven) {
+        // ElevenLabs 官方专属 REST 端点：/v1/text-to-speech/{voice_id}
+        var elBase = base ? base.replace(/\/v1\/?$/, '') : 'https://api.elevenlabs.io';
+        var actualVoiceId = voiceId || '7klAjt7mJgqnarhbNXDG';
+        fetchUrl = elBase + '/v1/text-to-speech/' + encodeURIComponent(actualVoiceId);
+        fetchHeaders = {
+          'Content-Type': 'application/json',
+          'xi-api-key': key
+        };
+        fetchBody = JSON.stringify({
+          text: text,
+          model_id: model || 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.8
+          }
+        });
+      } else {
+        // 标准 OpenAI /v1/audio/speech 规范接口 (包括聚合中转站、Mossland、自建TTS)
+        var cleanBase = (base || 'https://api.openai.com/v1').replace(/\/audio\/speech\/?$/, '').replace(/\/v1\/?$/, '') + '/v1';
+        fetchUrl = cleanBase + '/audio/speech';
+        fetchHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key
+        };
+        fetchBody = JSON.stringify({
+          model: model || 'tts-1',
+          input: text,
+          voice: voiceId || 'alloy'
+        });
+      }
+
+      fetch(fetchUrl, {
+        method: 'POST',
+        headers: fetchHeaders,
+        body: fetchBody
+      }).then(function(resp) {
+        if (!resp.ok) {
+          return resp.text().then(function(errTxt) {
+            var detail = '';
+            try {
+              var jsonErr = JSON.parse(errTxt);
+              detail = (jsonErr.base_resp && jsonErr.base_resp.status_msg) || (jsonErr.error && jsonErr.error.message) || jsonErr.message || jsonErr.detail || errTxt;
+            } catch(e) {
+              detail = errTxt;
+            }
+            throw new Error('HTTP ' + resp.status + ' (' + (detail.slice(0, 100)) + ')');
+          });
+        }
+        var ctype = resp.headers.get('content-type') || '';
+        if (ctype.indexOf('application/json') !== -1 || isMinimax) {
+          return resp.json().then(function(data) {
+            if (data.base_resp && data.base_resp.status_code !== 0) {
+              throw new Error('MiniMax: ' + data.base_resp.status_msg);
+            }
+            // MiniMax 支持直接返回音频 hex 或 data.audio_file
+            if (data.data && data.data.audio) {
+              // hex string 转 blob
+              var hex = data.data.audio;
+              var bytes = new Uint8Array(hex.length / 2);
+              for (var i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+              }
+              return new Blob([bytes], { type: 'audio/mp3' });
+            } else if (data.data && data.data.audio_file) {
+              return fetch(data.data.audio_file).then(function(r) { return r.blob(); });
+            } else if (data.audio_url) {
+              return fetch(data.audio_url).then(function(r) { return r.blob(); });
+            }
+            throw new Error('MiniMax 响应中未包含音频数据');
+          });
+        }
+        return resp.blob();
+      }).then(function(blob) {
+        var audioUrl = URL.createObjectURL(blob);
+        playAudio(audioUrl);
+        if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
+      }).catch(function(err) {
+        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message + '。启动本地声线兜底。';
+        playNativeSpeech(text);
+      }).finally(function() {
+        $('voiceTestBtn').disabled = false;
+      });
     };
   }
 
