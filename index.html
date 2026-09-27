@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_31">
+  <link rel="stylesheet" href="style.css?v=20260927_32">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -177,10 +177,8 @@
       <audio id="voiceAudioPlayer" style="display:none;"></audio>
     </div>
 
-    <div style="display:flex; gap:10px;">
-      <button class="primary" id="saveVoiceBtn" style="flex:1; min-height:44px; border-radius:12px; font-weight:600;">保存语音设置</button>
-      <button class="secondary close-modal" style="min-height:44px; border-radius:12px;">取消</button>
-    </div>
+  <button class="primary" id="saveVoiceBtn">保存语音设置</button>
+  <button class="secondary close-modal">取消</button>
   </div>
 </div>
 <div class="modal cv-ins-modal" id="apiModal"><div class="sheet" style="border-radius:24px 24px 0 0; max-height:90dvh; overflow-y:auto;">
@@ -210,8 +208,8 @@
     <select id="fetchedModelSelect" style="width:100%; border:1px solid var(--line); border-radius:11px; background:var(--field); padding:10px; font-size:13px;"></select>
   </div>
   <p class="note" style="margin-top:10px;">密钥仅加密保存在本地浏览器中，绝不上报。在聊天中发送消息或点击魔法棒星光即可实时调用 AI 回答。</p>
-  <button class="primary" id="saveApi" style="min-height:44px; border-radius:12px; margin-top:8px;">保存 API 配置</button>
-  <button class="secondary close-modal" style="min-height:40px; border-radius:12px;">取消</button>
+  <button class="primary" id="saveApi">保存 API 配置</button>
+  <button class="secondary close-modal">取消</button>
 </div></div>
 <!-- 我的档案与动态记忆模态框 -->
 <div class="modal Revery-persona-modal cv-ins-modal" id="userPersonaModal">
@@ -427,7 +425,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_31"></script>
+<script src="app.js?v=20260927_32"></script>
 
 
 
