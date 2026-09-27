@@ -2494,3 +2494,40 @@
 
   // 页面启动时自载入全站主题
   try { applyGlobalThemeSettings(); } catch(e) {}
+
+
+
+// =========================================================================
+// 终极事件委托保底：无论何时点击“主题与聊天气泡”，均稳定全屏滑入主题页面
+// =========================================================================
+(function initGlobalThemeDelegation() {
+  function openThemeFullPage() {
+    var dr = document.getElementById('drawer');
+    if (dr) dr.classList.remove('open');
+    if (typeof initGlobalThemePage === 'function') {
+      try { initGlobalThemePage(); } catch(e) {}
+    }
+    var tp = document.getElementById('themePage');
+    if (tp) {
+      tp.classList.add('show');
+      try { history.pushState({ page: 'themePage' }, '', '#theme'); } catch(e) {}
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    var btn = e.target && e.target.closest && e.target.closest('#globalThemeBtn');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      openThemeFullPage();
+    }
+    var backBtn = e.target && e.target.closest && e.target.closest('#themePageBackBtn');
+    if (backBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var tp = document.getElementById('themePage');
+      if (tp) tp.classList.remove('show');
+      if (location.hash === '#theme') history.back();
+    }
+  }, true);
+})();
