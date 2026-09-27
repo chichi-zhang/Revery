@@ -9,6 +9,14 @@
       location: '📍 Your private universe',
       avatar: fallbackAvatar
     },
+    userPersona: {
+      name: '鱆恩幼',
+      bio: '性格真实直率，喜欢有话直说的真诚互动，讨厌机械呆板的应付与说教；对世界充满好奇心与敏锐的感受力。',
+      tips: [
+        { text: '喜欢松弛且真实的聊天氛围，厌恶AI味与客套话', time: '系统预设' },
+        { text: '注重界面的极简美感与纯粹体验，对视觉排版有极高要求', time: '系统预设' }
+      ]
+    },
     api: { name: '格脉中转', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
     apiPresets: [
       { name: '格脉中转 (gemai)', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
@@ -29,6 +37,7 @@
       if (x && x.profile && Array.isArray(x.characters)) {
         x.settings = x.settings || { theme: 'dark' };
         if (!x.api) x.api = clone(defaults.api);
+        if (!x.userPersona) x.userPersona = clone(defaults.userPersona);
         // 清理旧演示数据
         var dummyIds = ['xie', 'daddy', 'sheng'];
         x.characters = x.characters.filter(function(c) {
@@ -227,7 +236,12 @@
 
       var quoteHtml = '';
       if (m.quote) {
-        quoteHtml = '<div class="quote-snippet">💬 ' + esc(m.quote.sender === 'user' ? '我: ' : 'Ta: ') + esc(m.quote.text) + '</div>';
+        quoteHtml = '<div class="Revery-quote-wrap quote-snippet-wrap">' +
+          '<div class="Revery-quote-snippet quote-snippet">' +
+            '<span class="Revery-quote-sender">💬 ' + esc(m.quote.sender === 'user' ? (getUserCallingName(c) || '我') : (getCharDisplayName(c) || 'Ta')) + '</span>' +
+            '<span class="Revery-quote-text">' + esc(m.quote.text) + '</span>' +
+          '</div>' +
+        '</div>';
       }
 
       var innerHtml = '';
@@ -1014,6 +1028,19 @@
     var userName = getUserCallingName(c);
     var charName = getCharDisplayName(c);
     systemPrompt += '\n[当前身份环境] 你的名字是: ' + charName + '；用户的名字是: ' + userName + '。请严格保持该人设。';
+
+    // 核心注入：用户画像与长期记忆 (User Persona)
+    var uPersona = state.userPersona || defaults.userPersona;
+    systemPrompt += '\n\n【对话对象（' + userName + '）的核心画像与常驻记忆】\n' +
+      '- 称呼/真名: ' + (uPersona.name || userName) + '\n' +
+      '- 核心背景与性格设定: ' + (uPersona.bio || '无特殊限定，保持真诚自然的互动。') + '\n';
+    if (uPersona.tips && uPersona.tips.length > 0) {
+      systemPrompt += '- 你在过往互动中悄悄记下的关于Ta的细节与习惯:\n';
+      uPersona.tips.forEach(function(tip, tidx) {
+        systemPrompt += '  * ' + tip.text + '\n';
+      });
+    }
+    systemPrompt += '- 交互准则: 上述画像是对方真实的性格偏好与生活细节，请在所有回复和心理活动中自然融入对这些特质的理解与体贴。如果你在本次聊天中捕捉到了关于' + userName + '的全新事实、生活习惯或雷点喜好，可在回复的正文末尾输出 `[USER_TIP: 捕捉到的小事实]`，系统会自动归纳存入Ta的档案。';
     systemPrompt += '\n\n【关于thinking block的指示】\n' +
       '使用中文。\n' +
       '保持完全真实的内在思考，在thinking block是我看到' + userName + '的消息时，自然的思维流动，是我给' + userName + '的情书，写成连贯的长段落。\n' +
@@ -1106,6 +1133,20 @@
         c.userRemark = newUserRemark;
         replyText = replyText.replace(/\[REMARK_USER:\s*[^\]]+\]/g, '').trim();
         toast('Ta 把对你的称呼改成了: ' + newUserRemark);
+      }
+      // 检查是否有自动归纳用户画像记忆指令 [USER_TIP: xxx]
+      var tipMatches = replyText.match(/\[USER_TIP:\s*([^\]]+)\]/g);
+      if (tipMatches) {
+        if (!state.userPersona) state.userPersona = clone(defaults.userPersona);
+        if (!state.userPersona.tips) state.userPersona.tips = [];
+        tipMatches.forEach(function(tm) {
+          var tipContent = tm.replace(/\[USER_TIP:\s*/, '').replace(/\]$/, '').trim();
+          if (tipContent && !state.userPersona.tips.some(function(t) { return t.text === tipContent; })) {
+            state.userPersona.tips.push({ text: tipContent, time: time() });
+            toast('AI 悄悄为你记录了一条记忆: ' + tipContent.slice(0, 18) + '...');
+          }
+        });
+        replyText = replyText.replace(/\[USER_TIP:\s*[^\]]+\]/g, '').trim();
       }
 
       // 解析回复内容与强制保障 thinking 存在
