@@ -142,8 +142,8 @@
 
     $('stories').innerHTML = state.characters.map(function(c) {
       return '<button class="story" data-id="' + c.id + '">' +
-        '<span class="ring"><img src="' + esc(c.avatar || fallbackAvatar) + '"></span>' +
-        '<span>' + esc(c.name) + '</span>' +
+        '<span class="ring story-avatar-trigger" data-char-edit="' + c.id + '" title="编辑角色卡"><img src="' + esc(c.avatar || fallbackAvatar) + '"></span>' +
+        '<span class="story-name-trigger">' + esc(c.name) + '</span>' +
         '</button>';
     }).join('') + '<button class="story" data-add="1"><span class="ring" style="font-size:28px">＋</span><span>添加角色</span></button>';
 
@@ -272,9 +272,30 @@
     var charAvatarUrl = esc(c.avatar || fallbackAvatar);
     var userAvatarUrl = esc((state.profile && state.profile.avatar) || fallbackAvatar);
     var msgSeq = 0;
+    var lastTimestampMs = 0;
+    
+    function getMessageMs(msg) {
+      if (msg._ts) return msg._ts;
+      if (msg.time && msg.time.indexOf(':') !== -1) {
+        var parts = msg.time.split(':');
+        var now = new Date();
+        now.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+        return now.getTime();
+      }
+      return Date.now();
+    }
+
     $('messages').innerHTML = c.messages.map(function(m, idx) {
+      var curMs = getMessageMs(m);
+      var timeDividerHtml = '';
+      if (idx === 0 || (curMs - lastTimestampMs >= 5 * 60 * 1000)) {
+        lastTimestampMs = curMs;
+        var displayTime = m.time || time();
+        timeDividerHtml = '<div class="msg-time-row"><div class="msg-time-pill">' + esc(displayTime) + '</div></div>';
+      }
+
       if (m.role === 'system') {
-        return '<div class="msg-system-row"><div class="msg-system-pill">' + esc(m.text) + '</div></div>';
+        return timeDividerHtml + '<div class="msg-system-row"><div class="msg-system-pill">' + esc(m.text) + '</div></div>';
       }
       msgSeq++;
       m._seq = msgSeq;
@@ -791,7 +812,21 @@
       toast('正在重新生成刚才那轮回复……');
       requestReply(c);
     } else if (act === 'voice') {
-      generateCharVoiceMessage(c);
+      var userSpeechText = prompt('输入你想通过语音对 ' + getCharDisplayName(c) + ' 说的话（将模拟你的语音条发送）:', '');
+      if (userSpeechText && userSpeechText.trim()) {
+        var cleanUsrSpeech = userSpeechText.trim();
+        var estSec = Math.max(2, Math.min(60, Math.round(cleanUsrSpeech.length * 0.28 + 1)));
+        c.messages.push({
+          role: 'user',
+          type: 'voice',
+          duration: estSec,
+          text: cleanUsrSpeech,
+          time: time()
+        });
+        save();
+        renderMessages(c);
+        render();
+      }
     } else if (act === 'video') {
       toast('视频通话即将接入');
     } else if (act === 'sticker') {
@@ -869,7 +904,7 @@
   $('apiReplyBtn').onclick = function() {
     var c = character(activeId);
     if (!c) return;
-    toast('正在请求 API 回复……');
+    
     requestReply(c);
   };
 
@@ -982,6 +1017,19 @@
         isLongPressTriggered = false;
         return;
       }
+      // 9. 精准分流：如果是点击圆形头像，唤起角色卡编辑
+      var avatarTrigger = e.target.closest('[data-char-edit]');
+      if (avatarTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        var charId = avatarTrigger.getAttribute('data-char-edit');
+        activeId = charId;
+        initChatThemeModal();
+        showModal('chatThemeModal');
+        toast('进入角色卡设置');
+        return;
+      }
+
       if (isStories) {
         var addBtn = e.target.closest('[data-add]');
         if (addBtn) {
@@ -1080,25 +1128,79 @@
     'openrouter': { name: 'OpenRouter', base: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o' }
   };
 
+  
+  var DEFAULT_API_PRESETS = [
+    { id: 'gemai', name: '格脉 (api.gemai.cc) / gpt-4o', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
+    { id: 'openai', name: 'OpenAI 官方 (api.openai.com) / gpt-4o', base: 'https://api.openai.com/v1', key: '', model: 'gpt-4o' },
+    { id: 'deepseek', name: 'DeepSeek 官方 (api.deepseek.com) / deepseek-chat', base: 'https://api.deepseek.com/v1', key: '', model: 'deepseek-chat' },
+    { id: 'siliconflow', name: '硅基流动 (api.siliconflow.cn) / deepseek-v3', base: 'https://api.siliconflow.cn/v1', key: '', model: 'deepseek-ai/DeepSeek-V3' },
+    { id: 'openrouter', name: 'OpenRouter (openrouter.ai/api/v1)', base: 'https://openrouter.ai/api/v1', key: '', model: 'anthropic/claude-3.5-sonnet' }
+  ];
+
+  function getStoredApiPresets() {
+    var stored = localStorage.getItem('Revery_saved_api_presets');
+    if (stored) {
+      try { return JSON.parse(stored); } catch(e) {}
+    }
+    return DEFAULT_API_PRESETS;
+  }
+
+  function renderApiPresetOptions() {
+    var sel = $('apiPresetSelect');
+    if (!sel) return;
+    var list = getStoredApiPresets();
+    sel.innerHTML = '<option value="">-- 选择预设或快速切换 --</option>' + list.map(function(p, i) {
+      return '<option value="' + i + '">' + esc(p.name) + '</option>';
+    }).join('');
+  }
+
   function fillApi() {
     var a = state.api || {};
     $('apiName').value = a.name || '';
     $('apiBase').value = a.base || '';
     $('apiKey').value = a.key || '';
     $('apiModel').value = a.model || '';
-    if ($('apiPresetSelect')) $('apiPresetSelect').value = '';
+    renderApiPresetOptions();
   }
 
   if ($('apiPresetSelect')) {
     $('apiPresetSelect').onchange = function() {
-      var key = this.value;
-      if (API_PRESETS[key]) {
-        var p = API_PRESETS[key];
-        $('apiName').value = p.name;
-        $('apiBase').value = p.base;
-        $('apiModel').value = p.model;
-        toast('已载入 ' + p.name + ' 预设');
+      var idx = this.value;
+      if (idx !== '') {
+        var list = getStoredApiPresets();
+        var p = list[parseInt(idx, 10)];
+        if (p) {
+          $('apiName').value = p.name;
+          $('apiBase').value = p.base;
+          if (p.key) $('apiKey').value = p.key;
+          $('apiModel').value = p.model;
+          toast('已切换至预设: ' + p.name);
+        }
       }
+    };
+  }
+
+  if ($('saveApiAsPresetBtn')) {
+    $('saveApiAsPresetBtn').onclick = function() {
+      var name = ($('apiName').value.trim()) || prompt('请输入此 API 预设的名称:', '我的中转站');
+      if (!name) return;
+      var base = $('apiBase').value.trim();
+      var key = $('apiKey').value.trim();
+      var model = $('apiModel').value.trim() || 'gpt-4o';
+      if (!base) { toast('请先填写 Base URL'); return; }
+
+      var list = getStoredApiPresets();
+      list.unshift({
+        id: 'p_' + Date.now(),
+        name: name,
+        base: base,
+        key: key,
+        model: model
+      });
+      localStorage.setItem('Revery_saved_api_presets', JSON.stringify(list));
+      renderApiPresetOptions();
+      $('apiPresetSelect').value = '0';
+      toast('✅ 预设「' + name + '」已永久保存！');
     };
   }
 
@@ -1387,7 +1489,8 @@
     
     var userName = getUserCallingName(c);
     var charName = getCharDisplayName(c);
-    systemPrompt += '\n[当前身份环境] 你的名字是: ' + charName + '；用户的名字是: ' + userName + '。请严格保持该人设。';
+    var userGaveRemark = c.remarkName ? ('用户私下为你设置的爱称/备注是: 「' + c.remarkName + '」；') : '';
+    systemPrompt += '\n[当前身份环境] 你的官方角色名是: ' + (c.name || charName) + '；' + userGaveRemark + '当前顶栏显示名称是: ' + charName + '；用户的名字/称呼是: ' + userName + '。请严格保持该人设。在对话和心声中，你知道用户对你的称谓。';
 
     // 核心注入：用户画像与长期记忆 (User Persona)
     var uPersona = state.userPersona || defaults.userPersona;
@@ -1436,6 +1539,11 @@
       '   - 「' + charName + '正咬着烟嘴出神」\n' +
       '2. <details> 结束后，换行输出正式的回复正文。正文与口语严格遵循上述活人感全景法则！\n\n' +
       '【格式要求】请务必在每次回复的最开头输出用 <details><summary>' + charName + '的心声</summary>[在此写上述连贯的长段落独白]</details> 包裹你的思考链；思考闭合后，再输出对' + userName + '说的正文气泡内容。正文多句话之间使用双换行分隔以便分条发送。';
+
+    
+    // 赋予 AI 自然发语音的能力
+    systemPrompt += '\n\n【发语音能力协议】\n' +
+      '你完全具备像真人一样随时发语音消息的能力。当你觉得打字不够传达语气、想轻声叹气、撒娇、说悄悄话、或者语境更适合发语音条时，可以在回复的最后加上 `[VOICE: 你想用语音轻声说的那句话]`（注意：必须是真切的一两句新话，不要机械重复正文！）。系统会自动调用你的专属声音合成真实语音条发给用户！';
 
     apiMessages.push({ role: 'system', content: systemPrompt });
 
@@ -1509,7 +1617,12 @@
         var newUserRemark = userRemarkMatch[1].trim();
         c.userRemark = newUserRemark;
         replyText = replyText.replace(/\[REMARK_USER:\s*[^\]]+\]/g, '').trim();
-        toast('Ta 把对你的称呼改成了: ' + newUserRemark);
+        // 插入系统灰条通知［角色卡名字给你改成了 (xxx)］
+        c.messages.push({
+          role: 'system',
+          text: '[' + (c.name || '角色') + ' 给你改成了 (' + newUserRemark + ')]',
+          time: time()
+        });
       }
       // 检查是否有自动归纳用户画像记忆指令 [USER_TIP: xxx]
       var tipMatches = replyText.match(/\[USER_TIP:\s*([^\]]+)\]/g);
@@ -1535,6 +1648,14 @@
         thoughtText = charName + '看着你的消息，心里微微一动，默默想好了接下来要对你说的话……';
       }
 
+      // 检查是否有自主发语音指令 [VOICE: xxx]
+      var voiceMatch = bodyText.match(/\[VOICE:\s*([^\]]+)\]/);
+      var aiVoiceText = '';
+      if (voiceMatch) {
+        aiVoiceText = voiceMatch[1].trim();
+        bodyText = bodyText.replace(/\[VOICE:\s*[^\]]+\]/g, '').trim();
+      }
+
       // 检查正文是否需要分条发送（按双换行切分成多个自然小气泡）
       var paragraphs = bodyText.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
       if (paragraphs.length <= 1) {
@@ -1553,6 +1674,12 @@
       // 后续段落作为独立分条气泡自然发出
       for (var pi = 1; pi < paragraphs.length; pi++) {
         c.messages.push({ role: 'assistant', text: paragraphs[pi], time: time() });
+      }
+
+      if (aiVoiceText) {
+        setTimeout(function() {
+          generateCharVoiceMessage(c, aiVoiceText);
+        }, 600);
       }
 
       save();
@@ -1951,13 +2078,14 @@
     }
   };
 
+  
   function fillVoice() {
     var v = state.voice || defaults.voice;
+    if ($('voicePresetSelect')) $('voicePresetSelect').value = v.provider || '';
     if ($('voiceBase')) $('voiceBase').value = v.base || '';
     if ($('voiceKey')) $('voiceKey').value = v.key || '';
-    if ($('voiceId')) $('voiceId').value = v.voiceId || '';
+    if ($('voiceGroupId')) $('voiceGroupId').value = v.groupId || '';
     if ($('voiceModel')) $('voiceModel').value = v.model || '';
-    if ($('voicePresetSelect')) $('voicePresetSelect').value = v.provider || '';
     if ($('voiceTestStatus')) $('voiceTestStatus').textContent = '';
   }
 
@@ -2136,19 +2264,21 @@
     };
   }
 
+  
   if ($('saveVoiceBtn')) {
     $('saveVoiceBtn').onclick = function() {
       if (!state.voice) state.voice = clone(defaults.voice);
-      state.voice.provider = $('voicePresetSelect').value || 'custom';
-      state.voice.base = $('voiceBase').value.trim();
-      state.voice.key = $('voiceKey').value.trim();
-      state.voice.voiceId = $('voiceId').value.trim();
-      state.voice.model = $('voiceModel').value.trim();
+      state.voice.provider = ($('voicePresetSelect') && $('voicePresetSelect').value) || 'custom';
+      state.voice.base = ($('voiceBase') && $('voiceBase').value.trim()) || '';
+      state.voice.key = ($('voiceKey') && $('voiceKey').value.trim()) || '';
+      state.voice.groupId = ($('voiceGroupId') && $('voiceGroupId').value.trim()) || '';
+      state.voice.model = ($('voiceModel') && $('voiceModel').value.trim()) || 'speech-02-hd';
       save();
       closeModals();
-      toast('声音与语音 API 设置已保存！');
+      toast('声音与语音服务设置已保存！');
     };
   }
+
 
   
 
