@@ -2547,30 +2547,132 @@
 })();
 
 
-// 本地字体：仅使用浏览器本地存储，不上传文件
-(function initLocalFontPicker() {
-  var FONT_KEY = 'Revery_local_font_data_v1', FONT_NAME = 'ReveryUploadedFont';
-  function byId(id) { return document.getElementById(id); }
-  function applyLocalFont(dataUrl, fileName) {
-    var style=document.getElementById('Revery-local-font-style');
-    if (!style) { style=document.createElement('style'); style.id='Revery-local-font-style'; document.head.appendChild(style); }
-    style.textContent='@font-face{font-family:"'+FONT_NAME+'";src:url("'+dataUrl+'");font-display:swap;}html,body,button,input,textarea,select,.bubble,.chat-title,.msg-body{font-family:"'+FONT_NAME+'",sans-serif !important;}';
-    var status=byId('customFontFileStatus'), choose=byId('chooseCustomFontBtn'), remove=byId('removeCustomFontBtn');
-    if (status) status.textContent='已加载本地字体：'+(fileName||'自定义字体')+'（仅保存在本机浏览器）';
-    if (choose) choose.textContent='更换本地字体文件';
-    if (remove) remove.style.display='block';
-  }
-  window.addEventListener('DOMContentLoaded', function() {
-    var choose=byId('chooseCustomFontBtn'), file=byId('customFontFile'), remove=byId('removeCustomFontBtn');
-    if (choose && file) choose.addEventListener('click', function(){file.click();});
-    if (file) file.addEventListener('change', function(){
-      var selected=file.files&&file.files[0]; if(!selected)return;
-      if(!/\.(ttf|otf|woff2?)$/i.test(selected.name)){toast('请选择 TTF、OTF、WOFF 或 WOFF2 字体文件');file.value='';return;}
-      var reader=new FileReader(); reader.onload=function(){try{localStorage.setItem(FONT_KEY,JSON.stringify({name:selected.name,dataUrl:reader.result}));applyLocalFont(reader.result,selected.name);toast('本地字体已加载，全站预览生效');}catch(e){toast('字体文件较大，浏览器本地空间不足');}}; reader.readAsDataURL(selected);
+// 本地字体管理器：使用 IndexedDB 存储大字体文件，突破 localStorage 5MB 限制
+var ReveryFontManager = (function() {
+  var DB_NAME = 'ReveryFontDB', STORE = 'fonts', KEY = 'activeFont', FONT_FAMILY = 'ReveryCustomUploadedFont';
+  var currentBlobUrl = null;
+
+  function openDB() {
+    return new Promise(function(resolve, reject) {
+      if (!window.indexedDB) return reject(new Error('no indexedDB'));
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' });
+      };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function(e) { reject(e); };
     });
-    if(remove)remove.addEventListener('click',function(){localStorage.removeItem(FONT_KEY);var style=document.getElementById('Revery-local-font-style');if(style)style.remove();var status=byId('customFontFileStatus');if(status)status.textContent='字体只保存在当前浏览器本地，不会上传到服务器。';if(choose)choose.textContent='选择字体文件（TTF / OTF / WOFF / WOFF2）';remove.style.display='none';toast('已移除本地字体');});
-    try{var saved=JSON.parse(localStorage.getItem(FONT_KEY)||'null');if(saved&&saved.dataUrl)applyLocalFont(saved.dataUrl,saved.name);}catch(e){}
+  }
+
+  function saveFont(file) {
+    return openDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(STORE, 'readwrite');
+        var store = tx.objectStore(STORE);
+        store.put({ id: KEY, blob: file, name: file.name, type: file.type, time: Date.now() });
+        tx.oncomplete = function() { resolve(); };
+        tx.onerror = function(e) { reject(e); };
+      });
+    });
+  }
+
+  function getFont() {
+    return openDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(STORE, 'readonly');
+        var store = tx.objectStore(STORE);
+        var req = store.get(KEY);
+        req.onsuccess = function() { resolve(req.result || null); };
+        req.onerror = function() { resolve(null); };
+      });
+    }).catch(function() { return null; });
+  }
+
+  function deleteFont() {
+    return openDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(STORE, 'readwrite');
+        var store = tx.objectStore(STORE);
+        store.delete(KEY);
+        tx.oncomplete = function() { resolve(); };
+        tx.onerror = function(e) { reject(e); };
+      });
+    }).catch(function() {});
+  }
+
+  function applyFontBlob(blob, name) {
+    if (currentBlobUrl) {
+      try { URL.revokeObjectURL(currentBlobUrl); } catch(e) {}
+    }
+    currentBlobUrl = URL.createObjectURL(blob);
+
+    // 1. 原生 FontFace API 动态注入
+    if (window.FontFace) {
+      try {
+        var fontFace = new FontFace(FONT_FAMILY, 'url(' + currentBlobUrl + ')');
+        fontFace.load().then(function(loaded) {
+          document.fonts.add(loaded);
+        }).catch(function(e) {});
+      } catch(e) {}
+    }
+
+    // 2. 注入全局 CSS 规则，确保穿透全站（聊天气泡、主页、侧边栏、所有文字组件）
+    var styleEl = document.getElementById('Revery-local-font-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'Revery-local-font-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = '@font-face {\n' +
+      '  font-family: "' + FONT_FAMILY + '";\n' +
+      '  src: url("' + currentBlobUrl + '");\n' +
+      '  font-display: swap;\n' +
+      '}\n' +
+      'html, body, button, input, textarea, select, .bubble, .cv-bubble-user, .cv-bubble-ai, .chat-title, .msg-body, .char-name, .title, .cv-hero-name {\n' +
+      '  font-family: "' + FONT_FAMILY + '", sans-serif !important;\n' +
+      '}';
+
+    // 更新 UI 提示
+    var status = document.getElementById('customFontFileStatus');
+    var choose = document.getElementById('chooseCustomFontBtn');
+    var remove = document.getElementById('removeCustomFontBtn');
+    if (status) status.innerHTML = '已应用本地字体：<strong style="color:var(--text);">' + (name || '本地字体') + '</strong>';
+    if (choose) choose.textContent = '更换本地字体文件';
+    if (remove) remove.style.display = 'block';
+  }
+
+  function removeAppliedFont() {
+    if (currentBlobUrl) {
+      try { URL.revokeObjectURL(currentBlobUrl); } catch(e) {}
+      currentBlobUrl = null;
+    }
+    var styleEl = document.getElementById('Revery-local-font-style');
+    if (styleEl) styleEl.remove();
+
+    var status = document.getElementById('customFontFileStatus');
+    var choose = document.getElementById('chooseCustomFontBtn');
+    var remove = document.getElementById('removeCustomFontBtn');
+    if (status) status.textContent = '字体保存在当前设备，不会上传到云端。';
+    if (choose) choose.textContent = '选择字体文件（TTF / OTF / WOFF / WOFF2）';
+    if (remove) remove.style.display = 'none';
+  }
+
+  // 页面自启动载入
+  getFont().then(function(record) {
+    if (record && record.blob) {
+      applyFontBlob(record.blob, record.name);
+    }
   });
+
+  return {
+    FONT_FAMILY: FONT_FAMILY,
+    saveFont: saveFont,
+    getFont: getFont,
+    deleteFont: deleteFont,
+    applyFontBlob: applyFontBlob,
+    removeAppliedFont: removeAppliedFont
+  };
 })();
 
 // 主题页面在 index.html 中位于 app.js 之后，因此只延后绑定主题页自己的控件
@@ -2607,6 +2709,62 @@ window.addEventListener('DOMContentLoaded', function() {
     var display=document.getElementById('bubbleRadiusDisplay');
     if (display) display.textContent=this.value+'px';
   });
+  
+  // === 本地字体选择与交互 ===
+  var chooseBtn = document.getElementById('chooseCustomFontBtn');
+  var fontFileInput = document.getElementById('customFontFile');
+  var removeFontBtn = document.getElementById('removeCustomFontBtn');
+
+  if (chooseBtn && fontFileInput) {
+    chooseBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      fontFileInput.click();
+    });
+  }
+
+  if (fontFileInput) {
+    fontFileInput.addEventListener('change', function() {
+      var file = fontFileInput.files && fontFileInput.files[0];
+      if (!file) return;
+      var ok = /\.(ttf|otf|woff2?)$/i.test(file.name);
+      if (!ok) {
+        toast('请选择 TTF、OTF、WOFF 或 WOFF2 格式的字体');
+        fontFileInput.value = '';
+        return;
+      }
+      // 保存至 IndexedDB 并立即全站应用
+      ReveryFontManager.saveFont(file).then(function() {
+        ReveryFontManager.applyFontBlob(file, file.name);
+        // 同时在设置里标记当前主字体为本地字体
+        var settings = {};
+        try { settings = JSON.parse(localStorage.getItem('Revery_global_theme_settings')) || {}; } catch(e) {}
+        settings.font = 'custom';
+        settings.customFontType = 'local';
+        settings.customFontName = file.name;
+        localStorage.setItem('Revery_global_theme_settings', JSON.stringify(settings));
+        toast('字体已成功加载并保存到全站！');
+      }).catch(function(err) {
+        toast('存储字体失败：' + (err.message || err));
+      });
+    });
+  }
+
+  if (removeFontBtn) {
+    removeFontBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      ReveryFontManager.deleteFont().then(function() {
+        ReveryFontManager.removeAppliedFont();
+        var settings = {};
+        try { settings = JSON.parse(localStorage.getItem('Revery_global_theme_settings')) || {}; } catch(e) {}
+        settings.font = '';
+        delete settings.customFontType;
+        delete settings.customFontName;
+        localStorage.setItem('Revery_global_theme_settings', JSON.stringify(settings));
+        toast('已移除本地字体');
+      });
+    });
+  }
+
   var saveBtn = document.getElementById('saveGlobalThemeBtn');
   if (saveBtn) saveBtn.addEventListener('click', function(e) {
     e.preventDefault();
