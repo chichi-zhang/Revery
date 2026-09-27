@@ -103,7 +103,155 @@
     var el = $('toast');
     el.textContent = t;
     el.classList.add('show');
-    setTimeout(function() { el.classList.remove('show'); }, 1800);
+    setTimeout(function() {
+
+// ==========================================
+// 浮生忆匣 (EchoVault) 核心记忆中枢与召回引擎
+// ==========================================
+window.REVERY_MEMORY = {
+  // 获取指定角色的全部记忆
+  getAll: function(charId) {
+    if (!charId) return [];
+    var list = [];
+    try {
+      list = JSON.parse(localStorage.getItem('revery_memories_' + charId) || '[]');
+    } catch(e) { list = []; }
+    return list;
+  },
+
+  // 持久化保存
+  saveAll: function(charId, list) {
+    if (!charId) return;
+    try {
+      localStorage.setItem('revery_memories_' + charId, JSON.stringify(list));
+    } catch(e) { console.error('save memories err', e); }
+  },
+
+  // 写入一条新记忆
+  add: function(charId, item) {
+    var list = this.getAll(charId);
+    var now = new Date();
+    var nowStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    var newMem = {
+      id: 'EV-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      title: item.title || '闪光羁绊',
+      body: item.body || '',
+      type: item.type || 'daily', // permanent (核心誓约/契约) | daily (时光足迹/日常)
+      importance: Number(item.importance) || 8,
+      tags: item.tags || [],
+      date: item.date || nowStr,
+      createdAt: now.toISOString()
+    };
+    list.unshift(newMem);
+    this.saveAll(charId, list);
+    return newMem;
+  },
+
+  // 删除单条记忆
+  remove: function(charId, memId) {
+    var list = this.getAll(charId).filter(function(m) { return m.id !== memId; });
+    this.saveAll(charId, list);
+  },
+
+  // 智能相关性召回 (Recall Engine)
+  recall: function(charId, userQuery, limit) {
+    limit = limit || 3;
+    var list = this.getAll(charId);
+    if (!list || list.length === 0) return [];
+
+    // 若无明确查询词，默认返回最高权重置顶的钉选记忆
+    if (!userQuery || typeof userQuery !== 'string' || !userQuery.trim()) {
+      return list.filter(function(m) { return m.type === 'permanent'; }).slice(0, limit);
+    }
+
+    var q = userQuery.toLowerCase();
+    var scored = list.map(function(m) {
+      // 基础分：永久誓约天然具备高共振基底
+      var score = (m.type === 'permanent' ? 3.0 : 1.0) * (m.importance || 7);
+      var matchCount = 0;
+      var searchCorpus = ((m.title || '') + ' ' + (m.body || '') + ' ' + (m.tags || []).join(' ')).toLowerCase();
+
+      // 提取长度>=2的关键词片段进行命中评分
+      var tokens = q.split(/[\s,，.。!！?？、~_+=\-]+/);
+      tokens.forEach(function(t) {
+        if (t && t.length >= 2 && searchCorpus.indexOf(t) !== -1) {
+          matchCount += 4;
+        }
+      });
+
+      if (matchCount > 0) {
+        score += matchCount * 8;
+      }
+      return { mem: m, score: score, matchCount: matchCount };
+    });
+
+    // 过滤并按分数高低截取 Top N
+    var candidates = scored.filter(function(s) { return s.matchCount > 0 || s.mem.type === 'permanent'; });
+    candidates.sort(function(a, b) { return b.score - a.score; });
+    return candidates.slice(0, limit).map(function(s) { return s.mem; });
+  },
+
+  // 检查并执行 20 轮自动提炼记忆逻辑
+  checkAutoSummarize: function(c, apiConfig) {
+    if (!c || !c.messages || c.messages.length === 0) return;
+    var validUserCount = c.messages.filter(function(m) { return m.role === 'user'; }).length;
+    var lastSummarizedCount = c._lastAutoSummCount || 0;
+
+    // 当用户新增对话达到 20 轮时，在后台静默发起一次记忆提炼
+    if (validUserCount >= lastSummarizedCount + 20) {
+      c._lastAutoSummCount = validUserCount;
+      save();
+
+      var recentDialog = c.messages.slice(-30).map(function(m) {
+        return (m.role === 'user' ? '用户: ' : (c.name || 'AI') + ': ') + (m.text || '');
+      }).join('\n');
+
+      var prompt = '请仔细阅读以下这段最近的真实聊天记录，从中提取出 1 条最具情感重量或核心事实的记忆片段（如：双方的约定、重要事实、喜好偏好、心动瞬间或关键里程碑）。\n\n' +
+        '聊天内容如下：\n' + recentDialog + '\n\n' +
+        '【输出格式规范】严格只返回合法的 JSON 对象，不要输出任何其他多余说明字符：\n' +
+        '{"title": "记忆标题(10字内)", "body": "记忆提炼正文(50-100字)", "type": "daily", "tags": ["标签1", "标签2"], "importance": 8}';
+
+      try {
+        var cleanBase = (apiConfig.base || '').replace(/\/+$/, '');
+        fetch(cleanBase + '/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiConfig.key
+          },
+          body: JSON.stringify({
+            model: apiConfig.model || 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3
+          })
+        }).then(function(res) {
+          if (!res.ok) return null;
+          return res.json();
+        }).then(function(data) {
+          if (!data || !data.choices || !data.choices[0]) return;
+          var raw = data.choices[0].message.content || '';
+          var jsonMatch = raw.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            var parsed = JSON.parse(jsonMatch[0]);
+            if (parsed && parsed.body) {
+              window.REVERY_MEMORY.add(c.id, {
+                title: parsed.title || '时光回响',
+                body: parsed.body,
+                type: parsed.type || 'daily',
+                tags: parsed.tags || ['自动提炼'],
+                importance: parsed.importance || 8
+              });
+              console.log('[浮生忆匣] 已自动完成第 ' + validUserCount + ' 轮记忆沉淀:', parsed.title);
+            }
+          }
+        }).catch(function(err) {
+          console.warn('[浮生忆匣] 自动提炼暂缓:', err);
+        });
+      } catch(e) {}
+    }
+  }
+};
+ el.classList.remove('show'); }, 1800);
   }
 
   function fileData(input, done) {
@@ -726,6 +874,11 @@
       });
       save();
       renderMessages(c);
+
+      // 触发 20 轮记忆自动提炼
+      try {
+        window.REVERY_MEMORY.checkAutoSummarize(c, a);
+      } catch(autoSummErr) {}
       // 收到语音不自动抢播，用户点击播放按钮时才播放；点击语音气泡展开查看文字
       toast('已收到 ' + getCharDisplayName(c) + ' 发来的语音消息 🎵');
     }).catch(function(err) {
@@ -1672,6 +1825,22 @@
     // 赋予 AI 自然发语音的能力
     systemPrompt += '\n\n【发语音能力协议】\n' +
       '你完全具备像真人一样随时发语音消息的能力。当你觉得打字不够传达语气、想轻声叹气、撒娇、说悄悄话、或者语境更适合发语音条时，可以在回复的最后加上 `[VOICE: 你想用语音轻声说的那句话]`（注意：必须是真切的一两句新话，不要机械重复正文！）。系统会自动调用你的专属声音合成真实语音条发给用户！';
+
+    // === 浮生忆匣 (EchoVault) 记忆唤醒注入 ===
+    try {
+      var lastUserMsgText = text || '';
+      var recalledMems = window.REVERY_MEMORY.recall(c.id, lastUserMsgText, 3);
+      if (recalledMems && recalledMems.length > 0) {
+        var memContextStr = recalledMems.map(function(m, mIdx) {
+          return (mIdx + 1) + '. 【' + (m.type === 'permanent' ? '核心誓约' : '时光足迹') + ' · ' + (m.date || '') + '】' + m.title + '\n   ' + m.body;
+        }).join('\n');
+
+        systemPrompt += '\n\n【浮生忆匣 · 灵魂记忆回响】\n' +
+          '以下是你脑海深处与' + userName + '真实经历过的记忆片段：\n' +
+          memContextStr + '\n' +
+          '【记忆表达铁律】这些是你本身就刻在骨子里的真实过往。在回复中若触及相关话题，请自然融入对话，绝对禁止出现“根据记忆库检索/我查到记录”等任何AI客服式播报！直接把事实和细节说出来。';
+      }
+    } catch(memErr) { console.error('Recall mem err', memErr); }
 
     apiMessages.push({ role: 'system', content: systemPrompt });
 
@@ -2845,6 +3014,139 @@ var ReveryFontManager = (function() {
     applyFontBlob: applyFontBlob,
     removeAppliedFont: removeAppliedFont
   };
+
+
+  // === 浮生忆匣 全屏页面渲染与交互逻辑 ===
+  function renderMemoryPage() {
+    var c = activeId ? character(activeId) : (state.characters && state.characters[0]);
+    if (!c) {
+      toast('请先选择或创建一个角色');
+      return;
+    }
+    var charDisplayName = getCharDisplayName(c);
+    if ($('memoryCharSubtitle')) $('memoryCharSubtitle').textContent = charDisplayName + ' 的专属记忆星河 · 灵魂共振';
+
+    var allMems = window.REVERY_MEMORY.getAll(c.id);
+    if ($('memoryCountBadge')) $('memoryCountBadge').textContent = '已沉淀 ' + allMems.length + ' 条羁绊记忆';
+
+    var query = ($('memorySearchInput') ? $('memorySearchInput').value.trim().toLowerCase() : '');
+    var filtered = allMems;
+    if (query) {
+      filtered = allMems.filter(function(m) {
+        var str = ((m.title || '') + ' ' + (m.body || '') + ' ' + (m.tags || []).join(' ')).toLowerCase();
+        return str.indexOf(query) !== -1;
+      });
+    }
+
+    var permList = filtered.filter(function(m) { return m.type === 'permanent'; });
+    var dailyList = filtered.filter(function(m) { return m.type !== 'permanent'; });
+
+    function buildCardHtml(m) {
+      var tagsHtml = (m.tags || []).map(function(t) {
+        return '<span class="memory-tag-chip">#' + esc(t) + '</span>';
+      }).join('');
+
+      var trashSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+
+      return '<div class="memory-card ' + (m.type === 'permanent' ? 'permanent' : '') + '">' +
+        '<div class="memory-card-head">' +
+          '<div class="memory-card-title">' + esc(m.title) + '</div>' +
+          '<div class="memory-card-meta">' +
+            '<span class="memory-card-type-tag">' + (m.type === 'permanent' ? '核心誓约' : '时光足迹') + '</span>' +
+            '<span>' + esc(m.date || '') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="memory-card-body">' + esc(m.body) + '</div>' +
+        '<div class="memory-card-footer">' +
+          '<div class="memory-card-tags">' + tagsHtml + '</div>' +
+          '<button type="button" class="memory-del-btn" data-del-mem="' + esc(m.id) + '" title="遗忘此条记忆">' + trashSvg + '</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    if ($('permanentMemoryList')) {
+      if (permList.length === 0) {
+        $('permanentMemoryList').innerHTML = '<div class="memory-empty-tip">' + (query ? '未检索到相关的誓约' : '暂无核心誓约，可点击右上角镌刻') + '</div>';
+      } else {
+        $('permanentMemoryList').innerHTML = permList.map(buildCardHtml).join('');
+      }
+    }
+
+    if ($('dailyMemoryList')) {
+      if (dailyList.length === 0) {
+        $('dailyMemoryList').innerHTML = '<div class="memory-empty-tip">' + (query ? '未检索到相关的时光足迹' : '暂无时光记忆，每聊20轮会自动提炼') + '</div>';
+      } else {
+        $('dailyMemoryList').innerHTML = dailyList.map(buildCardHtml).join('');
+      }
+    }
+
+    // 绑定删除事件
+    document.querySelectorAll('[data-del-mem]').forEach(function(btn) {
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        var memId = btn.dataset.delMem;
+        if (confirm('确定要抹去这条珍贵的回忆吗？')) {
+          window.REVERY_MEMORY.remove(c.id, memId);
+          renderMemoryPage();
+          toast('记忆已封存抹去');
+        }
+      };
+    });
+  }
+
+  // 侧边栏点击进入「浮生忆匣」
+  if ($('openMemoryPageBtn')) {
+    $('openMemoryPageBtn').onclick = function(e) {
+      e.stopPropagation();
+      closeControlCenter();
+      renderMemoryPage();
+      $('memoryPage').classList.add('show');
+    };
+  }
+
+  // 返回按钮
+  if ($('memoryPageBackBtn')) {
+    $('memoryPageBackBtn').onclick = function(e) {
+      e.stopPropagation();
+      $('memoryPage').classList.remove('show');
+    };
+  }
+
+  // 搜索框动态过滤
+  if ($('memorySearchInput')) {
+    $('memorySearchInput').oninput = function() {
+      renderMemoryPage();
+    };
+  }
+
+  // 手动镌刻记忆
+  if ($('addMemoryManualBtn')) {
+    $('addMemoryManualBtn').onclick = function(e) {
+      e.stopPropagation();
+      var c = activeId ? character(activeId) : (state.characters && state.characters[0]);
+      if (!c) { toast('请先选择角色'); return; }
+
+      var title = prompt('记忆标题（例如：对戒契约、下雨天）：');
+      if (!title || !title.trim()) return;
+
+      var body = prompt('记忆内容详情（真实发生的约定或事情）：');
+      if (!body || !body.trim()) return;
+
+      var isPerm = confirm('是否设为【核心誓约与锚点】？\n（点击【确定】设为永久置顶誓约，点击【取消】设为日常时光足迹）');
+
+      window.REVERY_MEMORY.add(c.id, {
+        title: title.trim(),
+        body: body.trim(),
+        type: isPerm ? 'permanent' : 'daily',
+        tags: [isPerm ? '誓约' : '日常'],
+        importance: isPerm ? 10 : 8
+      });
+
+      renderMemoryPage();
+      toast('记忆已成功镌刻入匣！');
+    };
+  }
+
 })();
 
 // 主题页面在 index.html 中位于 app.js 之后，因此只延后绑定主题页自己的控件
