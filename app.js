@@ -174,15 +174,39 @@
 
     function renderMessages(c) {
     var svgFileSmall = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+    var mode = c.avatarMode || 'both';
+    var msgsEl = $('messages');
+    if (msgsEl) {
+      msgsEl.className = 'messages Revery-chat-messages cv-messages avatar-mode-' + mode;
+    }
+    var charAvatarUrl = esc(c.avatar || fallbackAvatar);
+    var userAvatarUrl = esc((state.profile && state.profile.avatar) || fallbackAvatar);
+
     $('messages').innerHTML = c.messages.map(function(m) {
       var isMe = (m.role === 'user');
+      var rowClass = 'msg-row ' + (isMe ? 'me' : 'them');
       var bubbleClass = 'bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai');
+
+      var innerHtml = '';
       if (m.type === 'image') {
-        return '<div class="' + bubbleClass + '" data-message-type="image"><img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="image"><img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
       } else if (m.type === 'file') {
-        return '<div class="' + bubbleClass + '" data-message-type="file"><div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="file"><div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
+      } else {
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + esc(m.text) + '</div>';
       }
-      return '<div class="' + bubbleClass + '" data-message-type="text">' + esc(m.text) + '</div>';
+
+      if (isMe) {
+        return '<div class="' + rowClass + '">' +
+          innerHtml +
+          '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
+          '</div>';
+      } else {
+        return '<div class="' + rowClass + '">' +
+          '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
+          innerHtml +
+          '</div>';
+      }
     }).join('');
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
   }
