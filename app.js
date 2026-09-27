@@ -43,6 +43,31 @@
   }
 
   var state = load(), activeId = null, deferredInstall = null;
+
+  var currentQuote = null; // { text: '...', sender: 'them'|'user', id: number }
+
+  function setQuote(msg) {
+    if (!msg) return;
+    currentQuote = msg;
+    var bar = $('chatQuoteBar');
+    var textEl = $('chatQuoteText');
+    if (bar && textEl) {
+      textEl.textContent = (msg.role === 'assistant' ? '对方: ' : '我: ') + (msg.text || (msg.type === 'image' ? '[图片]' : '[文件]'));
+      bar.style.display = 'flex';
+    }
+    if ($('messageInput')) $('messageInput').focus();
+  }
+
+  function clearQuote() {
+    currentQuote = null;
+    var bar = $('chatQuoteBar');
+    if (bar) bar.style.display = 'none';
+  }
+
+  if ($('chatQuoteCloseBtn')) {
+    $('chatQuoteCloseBtn').onclick = clearQuote;
+  }
+
   function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -188,17 +213,28 @@
     }
     var charAvatarUrl = esc(c.avatar || fallbackAvatar);
     var userAvatarUrl = esc((state.profile && state.profile.avatar) || fallbackAvatar);
+    var msgSeq = 0;
+    $('messages').innerHTML = c.messages.map(function(m, idx) {
+      if (m.role === 'system') {
+        return '<div class="msg-system-row"><div class="msg-system-pill">' + esc(m.text) + '</div></div>';
+      }
+      msgSeq++;
+      m._seq = msgSeq;
 
-    $('messages').innerHTML = c.messages.map(function(m) {
       var isMe = (m.role === 'user');
       var rowClass = 'msg-row ' + (isMe ? 'me' : 'them');
       var bubbleClass = 'bubble ' + (isMe ? 'me cv-bubble-user' : 'them cv-bubble-ai');
 
+      var quoteHtml = '';
+      if (m.quote) {
+        quoteHtml = '<div class="quote-snippet">💬 ' + esc(m.quote.sender === 'user' ? '我: ' : 'Ta: ') + esc(m.quote.text) + '</div>';
+      }
+
       var innerHtml = '';
       if (m.type === 'image') {
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="image"><img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="image">' + quoteHtml + '<img class="chat-img-thumb" src="' + esc(m.mediaUrl) + '" alt="图片"></div>';
       } else if (m.type === 'file') {
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="file"><div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="file">' + quoteHtml + '<div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
       } else {
         var parsed = parseMessageContent(m.text);
         var thinkingHtml = '';
@@ -209,22 +245,72 @@
             '</details>';
         }
         var bodyHtml = '<div class="msg-body">' + esc(parsed.body || (parsed.thought ? '' : m.text)) + '</div>';
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + thinkingHtml + bodyHtml + '</div>';
+        innerHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + quoteHtml + thinkingHtml + bodyHtml + '</div>';
       }
 
       if (isMe) {
-        return '<div class="' + rowClass + '">' +
+        return '<div class="' + rowClass + '" data-index="' + idx + '">' +
           innerHtml +
           '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
           '</div>';
       } else {
-        return '<div class="' + rowClass + '">' +
+        return '<div class="' + rowClass + '" data-index="' + idx + '">' +
           '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
           innerHtml +
           '</div>';
       }
     }).join('');
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
+    bindMessageSwipeListeners(c);
+  }
+
+  
+  // 消息向左滑动进行引用
+  function bindMessageSwipeListeners(c) {
+    var rows = document.querySelectorAll('#messages .msg-row.them');
+    rows.forEach(function(row) {
+      var startX = 0, startY = 0, currentX = 0, isSwipingLeft = false;
+      row.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        currentX = startX;
+        isSwipingLeft = false;
+        row.classList.remove('swiping');
+      }, { passive: true });
+
+      row.addEventListener('touchmove', function(e) {
+        var t = e.touches[0];
+        var dx = t.clientX - startX;
+        var dy = Math.abs(t.clientY - startY);
+        // 向左滑动 dx < 0
+        if (dx < -15 && dy < 30) {
+          isSwipingLeft = true;
+          var pull = Math.max(dx, -70);
+          row.style.transform = 'translateX(' + pull + 'px)';
+        }
+      }, { passive: true });
+
+      row.addEventListener('touchend', function(e) {
+        if (!isSwipingLeft) return;
+        var endX = e.changedTouches[0].clientX;
+        var dx = endX - startX;
+        row.classList.add('swiping');
+        row.style.transform = '';
+        if (dx < -45) {
+          var idx = parseInt(row.dataset.index, 10);
+          if (!isNaN(idx) && c.messages[idx]) {
+            var targetMsg = c.messages[idx];
+            setQuote(targetMsg);
+            if (navigator.vibrate) {
+              try { navigator.vibrate(35); } catch(err){}
+            }
+            toast('已引用消息 #' + (targetMsg._seq || (idx + 1)));
+          }
+        }
+        isSwipingLeft = false;
+      }, { passive: true });
+    });
   }
 
   function time() {
@@ -377,29 +463,17 @@
         fileInput.click();
       }
     } else if (act === 'reroll') {
-      // 重roll：如果最后一条是 assistant 的回复，删掉并重新生成；否则直接重新触发回复
-      if (c.messages.length > 0) {
-        if (c.messages[c.messages.length - 1].role === 'assistant') {
-          c.messages.pop();
-        }
+      // 重roll：如果最后是 assistant 回复（或一串 assistant），弹出并重新调用 API
+      var popped = false;
+      while (c.messages.length > 0 && c.messages[c.messages.length - 1].role === 'assistant') {
+        c.messages.pop();
+        popped = true;
       }
-      toast('正在重新生成回复 (重roll)……');
       save();
       renderMessages(c);
       render();
-      setTimeout(function() {
-        var rollTexts = [
-          '我重新想了想，刚才那句不算，听我的……',
-          '刚才没发挥好，让我重新说一遍给你听。',
-          '重来一次。你在我这永远有无限次重新开始的特权。',
-          '刚才那版没让你满意对不对？小狗换个姿势再来哄你。'
-        ];
-        var pick = rollTexts[Math.floor(Math.random() * rollTexts.length)];
-        c.messages.push({ role: 'assistant', text: pick, time: time() });
-        save();
-        renderMessages(c);
-        render();
-      }, 600);
+      toast('正在重新生成刚才那轮回复……');
+      requestReply(c);
     } else if (act === 'video') {
       toast('视频通话即将接入');
     } else if (act === 'sticker') {
@@ -893,7 +967,7 @@
         greeting: greeting,
         prompt: $('charPrompt').value.trim(),
         unread: 0,
-        messages: [{ role: 'assistant', text: greeting, time: time() }]
+        messages: [{ role: 'system', text: '你们已添加为好友，现在可以开始聊天了。', time: time() }]
       });
       save();
       render();
@@ -927,23 +1001,30 @@
     var apiMessages = [];
     var systemPrompt = (c.prompt && c.prompt.trim()) || '你是一个有温度的伴侣角色，用自然生动的语气与用户对话。';
     
-    // 注入角色人设与双向称呼
     var userName = getUserCallingName(c);
     var charName = getCharDisplayName(c);
     systemPrompt += '\n[当前身份环境] 你的名字是: ' + charName + '；用户的名字是: ' + userName + '。请严格保持该人设。';
+    systemPrompt += '\n[思考与输出规范] 请在每次回复的开头必须先输出你的内心思维流动，用 <think>...</think> 或 <details><summary>' + charName + '正在想</summary>...</details> 包裹；思考结束后再输出给对方的正文。如果正文包含多个句子或情绪递进，允许用双换行拆分。';
 
     apiMessages.push({ role: 'system', content: systemPrompt });
 
     // 取最近 16 条消息上下文
-    var recent = c.messages.slice(-16);
+    var recent = c.messages.slice(-20);
     recent.forEach(function(m) {
-      if (m.type === 'image') {
-        apiMessages.push({ role: m.role, content: '[用户发送了一张图片]' });
-      } else if (m.type === 'file') {
-        apiMessages.push({ role: m.role, content: '[用户发送了文件: ' + (m.fileName || '文档') + ']' });
-      } else if (m.text) {
-        apiMessages.push({ role: m.role, content: m.text });
+      if (m.role === 'system') return;
+      var prefix = '';
+      if (m.quote) {
+        prefix = '[引用了' + (m.quote.sender === 'user' ? '用户' : '你') + '的消息: "' + m.quote.text + '"]\n';
       }
+      var contentText = prefix + (m.text || '');
+      if (m.type === 'image') contentText += ' [图片]';
+      if (m.type === 'file') contentText += ' [文件: ' + (m.fileName || '') + ']';
+
+      // 剔除旧回复里冗长的思考部分，只保留正文给API上文
+      var parsed = parseMessageContent(contentText);
+      var cleanText = parsed.body || contentText;
+
+      apiMessages.push({ role: m.role, content: cleanText });
     });
 
     // 创建一条正在生成的占位气泡
@@ -1000,13 +1081,35 @@
         toast('Ta 把对你的称呼改成了: ' + newUserRemark);
       }
 
-      // 替换掉占位消息
+      // 解析回复内容与强制保障 thinking 存在
+      var parsed = parseMessageContent(replyText);
+      var thoughtText = parsed.thought;
+      var bodyText = parsed.body;
+
+      if (!thoughtText) {
+        thoughtText = charName + '看着你的消息，心里微微一动，默默想好了接下来要对你说的话……';
+      }
+
+      // 检查正文是否需要分条发送（按双换行切分成多个自然小气泡）
+      var paragraphs = bodyText.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
+      if (paragraphs.length <= 1) {
+        paragraphs = [bodyText];
+      }
+
       var idx = c.messages.indexOf(tempMsg);
       if (idx !== -1) {
-        c.messages[idx] = { role: 'assistant', text: replyText, time: time() };
-      } else {
-        c.messages.push({ role: 'assistant', text: replyText, time: time() });
+        c.messages.splice(idx, 1);
       }
+
+      // 第一条附带思考过程
+      var firstBubble = '<think>\n' + thoughtText + '\n</think>\n' + (paragraphs[0] || '');
+      c.messages.push({ role: 'assistant', text: firstBubble, time: time() });
+
+      // 后续段落作为独立分条气泡自然发出
+      for (var pi = 1; pi < paragraphs.length; pi++) {
+        c.messages.push({ role: 'assistant', text: paragraphs[pi], time: time() });
+      }
+
       save();
       renderMessages(c);
       render();
@@ -1029,30 +1132,28 @@
     e.preventDefault();
     var text = $('messageInput').value.trim(), c = character(activeId);
     if (!text || !c) return;
-    c.messages.push({ role: 'user', text: text, time: time() });
+
+    var newMsg = {
+      role: 'user',
+      text: text,
+      time: time()
+    };
+    if (currentQuote) {
+      newMsg.quote = {
+        sender: currentQuote.role,
+        text: currentQuote.text || '[媒体]',
+        seq: currentQuote._seq || null
+      };
+      clearQuote();
+    }
+
+    c.messages.push(newMsg);
     $('messageInput').value = '';
     save();
     renderMessages(c);
     if ($('plusPanel')) $('plusPanel').classList.remove('open');
     render();
-
-    var a = state.api || {};
-    if (a.base && a.key) {
-      // 真实调用在线 API 接口回答
-      requestReply(c);
-    } else {
-      setTimeout(function() {
-        c.messages.push({
-          role: 'assistant',
-          text: '（尚未配置 API 密钥，可在侧边栏「API 与模型」中填入中转站/官方 Key，保存后我将按照真实人设回答你。）',
-          time: time()
-        });
-        save();
-        renderMessages(c);
-        if ($('plusPanel')) $('plusPanel').classList.remove('open');
-        render();
-      }, 500);
-    }
+    // 用户可连发多条，不直接自动触发API，统一由右下角回复按钮触发！
   };
 
   $('shareBtn').onclick = function() {
