@@ -437,6 +437,202 @@
   }
 
   $('menuBtn').onclick = openDrawer;
+  
+  var CHAR_VOICE_PRESETS = {
+    'minimax_qingnian': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'qingnian1_max' },
+    'minimax_shaonian': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'shaonian1_max' },
+    'minimax_dashu': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'dashu1_max' },
+    'minimax_shaonv': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'shaonv1_max' },
+    'minimax_yujie': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'yujie1_max' },
+    'eleven_alder': { provider: 'elevenlabs', model: 'eleven_multilingual_v2', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
+    'eleven_adam': { provider: 'elevenlabs', model: 'eleven_multilingual_v2', voiceId: 'pNInz6obpgDQGcFmaJgB' },
+    'eleven_rachel': { provider: 'elevenlabs', model: 'eleven_multilingual_v2', voiceId: '21m00Tcm4TlvDq8ikWAM' }
+  };
+
+  function generateCharVoiceMessage(c, textToSpeak) {
+    if (!c) return;
+    var v = state.voice || defaults.voice;
+    if (!v.key) {
+      toast('请先在侧边栏「声音与语音服务」中填入 API 密钥！');
+      openVoiceModal();
+      return;
+    }
+
+    var base = (v.base || '').trim();
+    var key = (v.key || '').trim();
+    var defaultProvider = v.provider || 'minimax';
+    
+    var charVoiceId = (c.voiceId && c.voiceId.trim()) || v.voiceId || 'qingnian1_max';
+    var charPreset = c.voicePreset || '';
+    var provider = defaultProvider;
+    var model = v.model || 'speech-02-hd';
+
+    if (charPreset && CHAR_VOICE_PRESETS[charPreset]) {
+      var pInfo = CHAR_VOICE_PRESETS[charPreset];
+      provider = pInfo.provider;
+      model = pInfo.model;
+      if (!c.voiceId) charVoiceId = pInfo.voiceId;
+    }
+
+    var groupId = (v.groupId || '').trim();
+    if (!groupId) {
+      var gMatch = base.match(/[?&]GroupId=([^&#]+)/i);
+      if (gMatch) groupId = gMatch[1];
+    }
+
+    var isMinimax = provider === 'minimax' || base.indexOf('minimax') !== -1;
+    var isEleven = provider === 'elevenlabs' || base.indexOf('elevenlabs.io') !== -1;
+
+    var fetchUrl = '';
+    var fetchHeaders = {};
+    var fetchBody = '';
+
+    var text = (textToSpeak || '').trim();
+    if (!text) {
+      var lastAi = null;
+      for (var i = c.messages.length - 1; i >= 0; i--) {
+        if (c.messages[i].role === 'assistant' && c.messages[i].text) {
+          lastAi = c.messages[i];
+          break;
+        }
+      }
+      if (lastAi) {
+        var pMsg = parseMessageContent(lastAi.text);
+        text = pMsg.body || lastAi.text;
+      } else {
+        text = c.greeting || '你好呀，今天想跟我聊些什么呢？';
+      }
+    }
+
+    var cleanSpeech = text.replace(/\([^\)]*\)/g, '').replace(/（[^）]*）/g, '').trim();
+    if (!cleanSpeech) cleanSpeech = text;
+
+    toast('正在为 ' + getCharDisplayName(c) + ' 生成专属语音……');
+
+    if (isMinimax) {
+      var urlObj = base.replace(/\/+$/, '');
+      if (urlObj.indexOf('/t2a_v2') === -1) {
+        fetchUrl = urlObj + '/t2a_v2';
+      } else {
+        fetchUrl = urlObj;
+      }
+      if (groupId && fetchUrl.indexOf('GroupId=') === -1) {
+        fetchUrl += (fetchUrl.indexOf('?') === -1 ? '?' : '&') + 'GroupId=' + encodeURIComponent(groupId);
+      }
+      fetchHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      };
+      fetchBody = JSON.stringify({
+        model: model || 'speech-02-hd',
+        text: cleanSpeech,
+        stream: false,
+        voice_setting: {
+          voice_id: charVoiceId || 'qingnian1_max',
+          speed: 1.0,
+          vol: 1.0,
+          pitch: 0
+        },
+        audio_setting: {
+          sample_rate: 32000,
+          bitrate: 128000,
+          format: 'mp3',
+          channel: 1
+        }
+      });
+    } else if (isEleven) {
+      var eUrl = base.replace(/\/+$/, '');
+      var vId = charVoiceId || 'AsKyuFhJ2EuOMhWsc4Xq';
+      if (eUrl.indexOf('/text-to-speech') === -1) {
+        fetchUrl = eUrl + '/text-to-speech/' + encodeURIComponent(vId);
+      } else {
+        fetchUrl = eUrl;
+      }
+      fetchHeaders = {
+        'Content-Type': 'application/json',
+        'xi-api-key': key
+      };
+      fetchBody = JSON.stringify({
+        text: cleanSpeech,
+        model_id: model || 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
+        }
+      });
+    } else {
+      var oUrl = base.replace(/\/+$/, '');
+      if (oUrl.indexOf('/audio/speech') === -1) {
+        fetchUrl = oUrl + '/audio/speech';
+      } else {
+        fetchUrl = oUrl;
+      }
+      fetchHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      };
+      fetchBody = JSON.stringify({
+        model: model || 'tts-1',
+        input: cleanSpeech,
+        voice: charVoiceId || 'alloy'
+      });
+    }
+
+    fetch(fetchUrl, {
+      method: 'POST',
+      headers: fetchHeaders,
+      body: fetchBody
+    }).then(function(resp) {
+      if (!resp.ok) {
+        return resp.text().then(function(t) {
+          throw new Error('HTTP ' + resp.status + ': ' + t.slice(0, 100));
+        });
+      }
+      var contentType = resp.headers.get('content-type') || '';
+      if (contentType.indexOf('application/json') !== -1) {
+        return resp.json().then(function(json) {
+          if (json.data && json.data.audio) {
+            var hex = json.data.audio;
+            var bytes = new Uint8Array(hex.length / 2);
+            for (var i = 0; i < hex.length; i += 2) {
+              bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
+            return new Blob([bytes], { type: 'audio/mp3' });
+          } else if (json.audio_base64) {
+            var bin = atob(json.audio_base64);
+            var bArr = new Uint8Array(bin.length);
+            for (var j = 0; j < bin.length; j++) bArr[j] = bin.charCodeAt(j);
+            return new Blob([bArr], { type: 'audio/mp3' });
+          } else if (json.base_resp && json.base_resp.status_code !== 0) {
+            throw new Error('MiniMax 返回错误: ' + json.base_resp.status_msg);
+          } else {
+            throw new Error('返回 JSON 但未找到有效音频流');
+          }
+        });
+      }
+      return resp.blob();
+    }).then(function(blob) {
+      var audioUrl = URL.createObjectURL(blob);
+      var estSec = Math.max(2, Math.min(60, Math.round(cleanSpeech.length * 0.28 + 1)));
+      
+      c.messages.push({
+        role: 'assistant',
+        type: 'voice',
+        audioUrl: audioUrl,
+        duration: estSec,
+        text: cleanSpeech,
+        time: time()
+      });
+      save();
+      renderMessages(c);
+      playAudio(audioUrl);
+      toast('已收到 ' + getCharDisplayName(c) + ' 发来的语音消息 🎵');
+    }).catch(function(err) {
+      console.error('Voice generation error:', err);
+      toast('❌ 语音生成失败: ' + err.message);
+    });
+  }
+
   function initChatThemeModal() {
     var c = character(activeId);
     if (!c) return;
@@ -454,6 +650,8 @@
     if ($('chatCustomCss')) $('chatCustomCss').value = c.customCss || '';
     if ($('chatCustomAiRemark')) $('chatCustomAiRemark').value = c.remarkName || '';
     if ($('chatCustomUserRemark')) $('chatCustomUserRemark').value = c.userRemark || '';
+    if ($('chatCustomVoicePreset')) $('chatCustomVoicePreset').value = c.voicePreset || '';
+    if ($('chatCustomVoiceId')) $('chatCustomVoiceId').value = c.voiceId || '';
 
     var mode = c.avatarMode || 'both';
     var radios = document.getElementsByName('chatAvatarMode');
@@ -592,6 +790,8 @@
       render();
       toast('正在重新生成刚才那轮回复……');
       requestReply(c);
+    } else if (act === 'voice') {
+      generateCharVoiceMessage(c);
     } else if (act === 'video') {
       toast('视频通话即将接入');
     } else if (act === 'sticker') {
@@ -663,7 +863,7 @@
     };
   }
   // 通话按钮
-  $('chatCallBtn').onclick = function() { toast('语音通话即将接入'); };
+  $('chatCallBtn').onclick = function() { var c = character(activeId); if (c) generateCharVoiceMessage(c); else toast('未选定角色'); };
   $('chatVideoBtn').onclick = function() { toast('视频通话即将接入'); };
   // API 回复按钮
   $('apiReplyBtn').onclick = function() {
@@ -826,6 +1026,46 @@
     };
   }
 
+
+  
+  // 角色专属声音预设联动
+  if ($('chatCustomVoicePreset')) {
+    $('chatCustomVoicePreset').onchange = function() {
+      var val = this.value;
+      if (CHAR_VOICE_PRESETS[val]) {
+        if ($('chatCustomVoiceId')) $('chatCustomVoiceId').value = CHAR_VOICE_PRESETS[val].voiceId;
+        toast('已选定音色: ' + CHAR_VOICE_PRESETS[val].voiceId);
+      }
+    };
+  }
+
+  // 点击主页圆形大头像：进入角色设置！
+  if ($('profileAvatar')) {
+    $('profileAvatar').style.cursor = 'pointer';
+    $('profileAvatar').onclick = function(e) {
+      e.stopPropagation();
+      if (!activeId && state.characters && state.characters.length) {
+        activeId = state.characters[0].id;
+      }
+      if (activeId) {
+        initChatThemeModal();
+        showModal('chatThemeModal');
+        toast('进入角色卡设置');
+      } else {
+        showModal('characterModal');
+      }
+    };
+  }
+
+  // 点击聊天界面顶栏头像：进入角色设置！
+  if ($('chatAvatar')) {
+    $('chatAvatar').style.cursor = 'pointer';
+    $('chatAvatar').onclick = function(e) {
+      e.stopPropagation();
+      initChatThemeModal();
+      showModal('chatThemeModal');
+    };
+  }
 
   document.querySelectorAll('.close-modal').forEach(function(b) { b.onclick = closeModals; });
   document.querySelectorAll('.modal').forEach(function(m) {
@@ -1021,6 +1261,12 @@
     }
     if ($('chatCustomUserRemark')) {
       c.userRemark = $('chatCustomUserRemark').value.trim();
+    }
+    if ($('chatCustomVoicePreset')) {
+      c.voicePreset = $('chatCustomVoicePreset').value;
+    }
+    if ($('chatCustomVoiceId')) {
+      c.voiceId = $('chatCustomVoiceId').value.trim();
     }
 
     var selectedMode = 'both';
