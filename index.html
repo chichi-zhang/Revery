@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_25">
+  <link rel="stylesheet" href="style.css?v=20260927_28">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -50,7 +50,7 @@
   <button class="nav-btn" data-tab="tools"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="nav-text">工具箱</span></button>
 </nav>
 </div>
-<div class="drawer" id="drawer"><div class="shade" id="shade"></div><aside class="drawer-panel"><div class="drawer-title"><h2>控制中心</h2><button class="icon-btn" id="closeDrawer">×</button></div><div class="menu-group"><button class="menu-item" id="themeBtn"><i>☀</i><span>切换日间版本</span><em>›</em></button><button class="menu-item" id="installBtn"><i>⇩</i><span>安装到桌面</span><em>›</em></button></div><div class="menu-group"><small>连接与模型</small><button class="menu-item" data-open="api"><i>◈</i><span>API 与模型</span><em>›</em></button><button class="menu-item"><i>⌁</i><span>连接测试</span><em>›</em></button></div><div class="menu-group"><small>用户与画像</small><button class="menu-item" id="openUserPersonaBtn"><i>👤</i><span>我的档案 (人设与记忆)</span><em>›</em></button></div><div class="menu-group"><small>角色与聊天</small><button class="menu-item" data-open="character"><i>＋</i><span>新建角色卡</span><em>›</em></button><button class="menu-item"><i>⇩</i><span>导入角色卡</span><em>›</em></button><button class="menu-item"><i>☷</i><span>对话与记忆</span><em>›</em></button></div><div class="menu-group"><small>个性化</small><button class="menu-item" data-open="profile"><i>✦</i><span>编辑主页</span><em>›</em></button><button class="menu-item"><i>◐</i><span>主题与聊天气泡</span><em>›</em></button></div><div class="menu-group"><small>数据</small><button class="menu-item" id="exportBtn"><i>⇧</i><span>导出本地数据</span><em>›</em></button><button class="menu-item" id="clearBtn"><i>⌫</i><span>清除演示数据</span><em>›</em></button></div></aside></div>
+<div class="drawer" id="drawer"><div class="shade" id="shade"></div><aside class="drawer-panel"><div class="drawer-title"><h2>控制中心</h2><button class="icon-btn" id="closeDrawer" aria-label="关闭侧边栏"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div class="menu-group"><button class="menu-item" id="themeBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></i><span>切换日间版本</span><em>›</em></button><button class="menu-item" id="installBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></i><span>安装到桌面</span><em>›</em></button></div><div class="menu-group"><small>连接与模型</small><button class="menu-item" data-open="api"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></i><span>API 与模型</span><em>›</em></button><button class="menu-item" data-open="voice" id="voiceBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></i><span>声音与语音 API</span><em>›</em></button></div><div class="menu-group"><small>用户与画像</small><button class="menu-item" data-open="persona" id="openUserPersonaBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></i><span>我的档案 (人设与记忆)</span><em>›</em></button></div><div class="menu-group"><small>角色与聊天</small><button class="menu-item" data-open="character"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></i><span>新建角色卡</span><em>›</em></button><button class="menu-item" id="importCharBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg></i><span>导入角色卡</span><em>›</em></button><button class="menu-item" id="chatMemoryBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></i><span>对话与记忆</span><em>›</em></button></div><div class="menu-group"><small>个性化</small><button class="menu-item" data-open="profile"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></i><span>编辑主页</span><em>›</em></button><button class="menu-item" id="globalThemeBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor"></path></svg></i><span>主题与聊天气泡</span><em>›</em></button></div><div class="menu-group"><small>数据</small><button class="menu-item" id="exportBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></i><span>导出本地数据</span><em>›</em></button><button class="menu-item" id="clearBtn"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></i><span>清除演示数据</span><em>›</em></button></div></aside></div>
 <section class="page Revery-chat-page pudding-online-chat" id="chatPage">
   <style id="ReveryCustomChatStyle"></style>
   <header class="chat-head Revery-chat-topbar cv-header" id="chatTopbar">
@@ -118,7 +118,72 @@
     </form>
   </div>
 </section>
-<div class="modal" id="apiModal"><div class="sheet" style="border-radius:24px 24px 0 0; max-height:90dvh; overflow-y:auto;">
+<!-- 声音与语音 API 设置模态框 (高级ins黑白灰毛玻璃) -->
+<div class="modal cv-ins-modal" id="voiceModal">
+  <div class="sheet cv-ins-sheet" style="border-radius:26px 26px 0 0; max-height:90dvh; overflow-y:auto;">
+    <div class="cv-sheet-handle"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h2 style="margin:0; font-size:18px; font-weight:700; letter-spacing:0.5px;">声音与语音服务 (Voice Engine)</h2>
+      <button type="button" class="icon-btn close-modal" style="font-size:18px;">✕</button>
+    </div>
+    <div class="sub" style="font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.5;">配置角色聊天时的真实语音播放引擎。支持 MiniMax、ElevenLabs、Mossland 官方/中转语音，支持当场生成试听。</div>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:600;">语音平台预设</label>
+      <select id="voicePresetSelect" style="width:100%; border:1px solid var(--line); border-radius:12px; background:var(--field); padding:11px; font-size:13.5px; color:var(--text);">
+        <option value="">-- 选择语音预设 --</option>
+        <option value="minimax">MiniMax (开放平台拟真语音 / speech-02-hd)</option>
+        <option value="elevenlabs">ElevenLabs (全球拟真情绪语音 / eleven_multilingual_v2)</option>
+        <option value="mossland">Mossland (莫斯大陆官方/聚合中转)</option>
+        <option value="custom">自定义语音接口 (Custom TTS)</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:600;">Base URL (语音接口地址)</label>
+      <input id="voiceBase" placeholder="https://api.minimax.chat/v1 或 https://api.elevenlabs.io/v1">
+    </div>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:600;">API Key (语音密钥)</label>
+      <input id="voiceKey" type="password" placeholder="sk-...">
+    </div>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:600;">Voice ID / 音色代码 (例如: qingnian1_max, AsKyuFhJ2EuOMhWsc4Xq)</label>
+      <input id="voiceId" placeholder="例如: qingnian1_max / 专属音色ID">
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label style="font-size:12px; font-weight:600;">语音模型名称 (Model)</label>
+      <input id="voiceModel" placeholder="例如: speech-02-hd / eleven_multilingual_v2">
+    </div>
+
+    <!-- 试听连通性测试模块 -->
+    <div class="cv-card" style="padding:14px; border-radius:16px; background:rgba(255,255,255,0.03); border:1px solid var(--line); margin-bottom:16px;">
+      <div style="font-size:12.5px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+        试听文本与连通性测试
+      </div>
+      <input id="voiceTestText" value="你好呀，能听到我的声音吗？" placeholder="输入测试播放的语句..." style="margin-bottom:10px;">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="button" class="btn" id="voiceTestBtn" style="flex:1; min-height:40px; border-radius:11px; background:var(--panel2); border:1px solid var(--line); color:var(--text); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          生成并试听
+        </button>
+        <button type="button" class="btn" id="voiceStopBtn" style="padding:0 14px; min-height:40px; border-radius:11px; background:var(--field); border:1px solid var(--line); color:var(--text); font-size:12px; display:none;">停止</button>
+      </div>
+      <div id="voiceTestStatus" style="font-size:11px; color:var(--muted); margin-top:8px; text-align:center;"></div>
+      <audio id="voiceAudioPlayer" style="display:none;"></audio>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="primary" id="saveVoiceBtn" style="flex:1; min-height:44px; border-radius:12px; font-weight:600;">保存语音设置</button>
+      <button class="secondary close-modal" style="min-height:44px; border-radius:12px;">取消</button>
+    </div>
+  </div>
+</div>
+<div class="modal cv-ins-modal" id="apiModal"><div class="sheet" style="border-radius:24px 24px 0 0; max-height:90dvh; overflow-y:auto;">
   <h2>API 与模型设置</h2>
   <div class="field">
     <label>快速预设选择 (一键载入常见中转站/直连)</label>
@@ -149,7 +214,7 @@
   <button class="secondary close-modal" style="min-height:40px; border-radius:12px;">取消</button>
 </div></div>
 <!-- 我的档案与动态记忆模态框 -->
-<div class="modal Revery-persona-modal" id="userPersonaModal">
+<div class="modal Revery-persona-modal cv-ins-modal" id="userPersonaModal">
   <div class="sheet" style="max-height:85vh; overflow-y:auto; border-radius:24px 24px 0 0; padding-bottom:30px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h2 style="margin:0; font-size:18px;">我的档案 (User Persona)</h2>
@@ -182,10 +247,10 @@
   </div>
 </div>
 
-<div class="modal" id="profileModal"><div class="sheet"><h2>编辑主页</h2><div class="field"><label>主页标题</label><input id="editBrand"></div><div class="field"><label>昵称</label><input id="editName"></div><div class="field"><label>个性签名</label><textarea id="editBio"></textarea></div><div class="field"><label>位置或状态</label><input id="editLocation"></div><div class="field"><label>头像图片网址</label><input id="editAvatar"></div><div class="field"><label>或从本地上传头像</label><input id="editAvatarFile" type="file" accept="image/*"></div><button class="primary" id="saveProfile">保存主页</button><button class="secondary close-modal">取消</button></div></div>
-<div class="modal" id="characterModal"><div class="sheet"><h2>新建角色卡</h2><div class="field"><label>角色名称</label><input id="charName" placeholder="角色名称"></div><div class="field"><label>头像图片网址</label><input id="charAvatar" placeholder="可留空"></div><div class="field"><label>或从本地上传头像</label><input id="charAvatarFile" type="file" accept="image/*"></div><div class="field"><label>开场白</label><textarea id="charGreeting" placeholder="角色第一次出现时说的话"></textarea></div><div class="field"><label>角色设定</label><textarea id="charPrompt" placeholder="人设、关系、语言风格……"></textarea></div><button class="primary" id="saveCharacter">添加到聊天列表</button><button class="secondary close-modal">取消</button></div></div>
+<div class="modal cv-ins-modal" id="profileModal"><div class="sheet"><h2>编辑主页</h2><div class="field"><label>主页标题</label><input id="editBrand"></div><div class="field"><label>昵称</label><input id="editName"></div><div class="field"><label>个性签名</label><textarea id="editBio"></textarea></div><div class="field"><label>位置或状态</label><input id="editLocation"></div><div class="field"><label>头像图片网址</label><input id="editAvatar"></div><div class="field"><label>或从本地上传头像</label><input id="editAvatarFile" type="file" accept="image/*"></div><button class="primary" id="saveProfile">保存主页</button><button class="secondary close-modal">取消</button></div></div>
+<div class="modal cv-ins-modal" id="characterModal"><div class="sheet"><h2>新建角色卡</h2><div class="field"><label>角色名称</label><input id="charName" placeholder="角色名称"></div><div class="field"><label>头像图片网址</label><input id="charAvatar" placeholder="可留空"></div><div class="field"><label>或从本地上传头像</label><input id="charAvatarFile" type="file" accept="image/*"></div><div class="field"><label>开场白</label><textarea id="charGreeting" placeholder="角色第一次出现时说的话"></textarea></div><div class="field"><label>角色设定</label><textarea id="charPrompt" placeholder="人设、关系、语言风格……"></textarea></div><button class="primary" id="saveCharacter">添加到聊天列表</button><button class="secondary close-modal">取消</button></div></div>
 
-<div class="modal Revery-chat-theme-modal" id="chatThemeModal">
+<div class="modal Revery-chat-theme-modal cv-ins-modal" id="chatThemeModal">
   <div class="sheet Revery-chat-theme-sheet cv-settings-sheet">
     <!-- 顶部抓手条 (iOS 模态卡感) -->
     <div class="cv-sheet-handle"></div>
@@ -350,7 +415,7 @@
 </div>
 
   <!-- 角色卡长按删除确认弹窗 -->
-  <div class="modal" id="deleteConfirmModal">
+  <div class="modal cv-ins-modal" id="deleteConfirmModal">
     <div class="sheet" style="max-width: 320px; text-align: center; border-radius: 20px; padding: 22px 18px;">
       <div style="font-size: 32px; margin-bottom: 8px;">🗑️</div>
       <h3 style="margin: 0 0 8px; font-size: 17px; font-weight: 700;">删除角色卡</h3>
@@ -362,7 +427,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_25"></script>
+<script src="app.js?v=20260927_28"></script>
 
 
 
