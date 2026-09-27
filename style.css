@@ -1781,3 +1781,16 @@ html[data-theme="light"] .modal.cv-ins-modal .soft-btn {
   opacity: 0.8 !important;
   font-variant-numeric: tabular-nums !important;
 }
+
+/* 规范弹窗底部双按钮排版 (保存:取消 = 2:1 或对称，禁止任何文字被压窄折行) */
+.modal .sheet > div[style*="display:flex"] button.primary,
+.modal .sheet > div[style*="display:flex"] button.secondary,
+.modal.cv-ins-modal button.primary,
+.modal.cv-ins-modal button.secondary {
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
