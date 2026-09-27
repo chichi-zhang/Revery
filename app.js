@@ -840,24 +840,87 @@
     }
   };
 
-  // 监听发送本地图片
+
+  // 高性能纯前端快速图片压缩（避免大图几兆直接转base64卡死页面）
+  function compressImageFast(file, maxWidth, maxHeight, quality) {
+    maxWidth = maxWidth || 1280;
+    maxHeight = maxHeight || 1280;
+    quality = quality || 0.82;
+    return new Promise(function(resolve, reject) {
+      if (window.createImageBitmap) {
+        createImageBitmap(file).then(function(bitmap) {
+          var w = bitmap.width, h = bitmap.height;
+          if (w > maxWidth || h > maxHeight) {
+            if (w / h > maxWidth / maxHeight) {
+              h = Math.round((h * maxWidth) / w);
+              w = maxWidth;
+            } else {
+              w = Math.round((w * maxHeight) / h);
+              h = maxHeight;
+            }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(bitmap, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        }).catch(function() {
+          fallbackReader();
+        });
+      } else {
+        fallbackReader();
+      }
+
+      function fallbackReader() {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var img = new Image();
+          img.onload = function() {
+            var w = img.width, h = img.height;
+            if (w > maxWidth || h > maxHeight) {
+              if (w / h > maxWidth / maxHeight) {
+                h = Math.round((h * maxWidth) / w);
+                w = maxWidth;
+              } else {
+                w = Math.round((w * maxHeight) / h);
+                h = maxHeight;
+              }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // 监听发送本地图片（极速流式压缩上屏）
   if ($('chatImageInput')) {
     $('chatImageInput').onchange = function(e) {
       var f = e.target.files && e.target.files[0];
       var c = character(activeId);
       if (!f || !c) return;
-      if (f.size > 8 * 1024 * 1024) { toast('图片请小于 8MB'); return; }
-      var reader = new FileReader();
-      reader.onload = function(evt) {
+      if (f.size > 25 * 1024 * 1024) { toast('图片请小于 25MB'); return; }
+      
+      // 异步快速轻量压缩，毫秒级上屏
+      compressImageFast(f, 1280, 1280, 0.82).then(function(compressedUrl) {
         c.messages.push({
           role: 'user',
           type: 'image',
-          mediaUrl: evt.target.result,
+          mediaUrl: compressedUrl,
           time: time()
         });
         save();
         renderMessages(c);
-        render();
         setTimeout(function() {
           c.messages.push({
             role: 'assistant',
@@ -866,10 +929,10 @@
           });
           save();
           renderMessages(c);
-          render();
-        }, 800);
-      };
-      reader.readAsDataURL(f);
+        }, 600);
+      }).catch(function(err) {
+        toast('图片处理失败: ' + (err.message || err));
+      });
     };
   }
 
@@ -1730,8 +1793,7 @@
     save();
     renderMessages(c);
     if ($('plusPanel')) $('plusPanel').classList.remove('open');
-    render();
-    // 用户可连发多条，不直接自动触发API，统一由右下角回复按钮触发！
+    // 发送消息只更新当前聊天气泡，不再强行触发主页全部卡片与故事重绘，极大提升顺滑度
   };
 
   $('shareBtn').onclick = function() {
