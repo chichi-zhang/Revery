@@ -2341,6 +2341,20 @@
   applyTheme();
   render();
 })();
+  // 主题页面独立代码的最小兼容层：不触碰主程序闭包内的其他逻辑
+  function $(id) { return document.getElementById(id); }
+  function closeDrawer() {
+    var drawer = document.getElementById('drawer');
+    if (drawer) drawer.classList.remove('open');
+  }
+  function toast(message) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 2200);
+  }
+
   // 屏蔽长按弹出的系统复制/分享/下载浮窗
   window.addEventListener('contextmenu', function(e) {
     try {
@@ -2531,3 +2545,54 @@
     }
   }, true);
 })();
+
+
+// 主题页面在 index.html 中位于 app.js 之后，因此只延后绑定主题页自己的控件
+window.addEventListener('DOMContentLoaded', function() {
+  var themeBtn = document.getElementById('globalThemeBtn');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopPropagation(); closeDrawer();
+      if (typeof initGlobalThemePage === 'function') initGlobalThemePage();
+      var page = document.getElementById('themePage');
+      if (page) page.classList.add('show');
+    }, true);
+  }
+  var backBtn = document.getElementById('themePageBackBtn');
+  if (backBtn) {
+    backBtn.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      var page = document.getElementById('themePage');
+      if (page) page.classList.remove('show');
+    }, true);
+  }
+  var fontSelect = document.getElementById('globalFontSelect');
+  if (fontSelect) fontSelect.addEventListener('change', function() {
+    var field=document.getElementById('customFontField');
+    if (field) field.style.display=this.value==='custom'?'block':'none';
+  });
+  var fontSize = document.getElementById('globalFontSizeRange');
+  if (fontSize) fontSize.addEventListener('input', function() {
+    var display=document.getElementById('fontSizeDisplay');
+    if (display) display.textContent=this.value+'px';
+  });
+  var radius = document.getElementById('globalBubbleRadiusRange');
+  if (radius) radius.addEventListener('input', function() {
+    var display=document.getElementById('bubbleRadiusDisplay');
+    if (display) display.textContent=this.value+'px';
+  });
+  var saveBtn = document.getElementById('saveGlobalThemeBtn');
+  if (saveBtn) saveBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    var select=document.getElementById('globalFontSelect'), custom=document.getElementById('customFontInput');
+    var size=document.getElementById('globalFontSizeRange'), radius=document.getElementById('globalBubbleRadiusRange'), css=document.getElementById('globalCustomCss');
+    var settings={
+      font: select && select.value==='custom' ? ((custom && custom.value.trim())||'') : ((select && select.value)||''),
+      fontSize:(size && size.value)||'13.5', bubbleRadius:(radius && radius.value)||'12', customCss:(css && css.value)||''
+    };
+    localStorage.setItem('Revery_global_theme_settings', JSON.stringify(settings));
+    if (typeof applyGlobalThemeSettings==='function') applyGlobalThemeSettings(settings);
+    var page=document.getElementById('themePage'); if (page) page.classList.remove('show');
+    toast('全站主题与字体设置已生效！');
+  }, true);
+});
