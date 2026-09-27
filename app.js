@@ -161,7 +161,26 @@
 
   function openDrawer() { $('drawer').classList.add('open'); }
   function closeDrawer() { $('drawer').classList.remove('open'); }
-  function showModal(id) { closeDrawer(); $(id).classList.add('show'); }
+  function showModal(id) {
+    closeDrawer();
+    var modalEl = $(id);
+    if (modalEl) {
+      modalEl.classList.add('show');
+      // 推入一个专属模态框历史记录，让 Android 系统的返回键/侧滑手势优先关闭弹窗，绝不退出网页！
+      history.pushState({ modalId: id }, '', '#' + id);
+    }
+  }
+
+  function closeModals() {
+    var opened = document.querySelectorAll('.modal.show');
+    if (opened.length > 0) {
+      opened.forEach(m => m.classList.remove('show'));
+      // 如果当前 URL 带有 modal hash，退回上一个 history 状态
+      if (location.hash && location.hash !== '#chat') {
+        history.back();
+      }
+    }
+  }
   function closeModals() {
     document.querySelectorAll('.modal').forEach(function(x) { x.classList.remove('show'); });
   }
@@ -1449,8 +1468,31 @@
 
   // 1. 接管浏览器的物理返回键 / 侧滑手势 (popstate)
   window.addEventListener('popstate', function(e) {
-    if (closeAnyActiveView()) {
-      // 成功关闭了一层浮层或返回了主页
+    // 监听系统返回手势/物理返回键
+    var modalOpen = document.querySelector('.modal.show');
+    if (modalOpen) {
+      modalOpen.classList.remove('show');
+      e.preventDefault();
+      return;
+    }
+    var drawerOpen = $('drawer') && $('drawer').classList.contains('open');
+    if (drawerOpen) {
+      closeDrawer();
+      e.preventDefault();
+      return;
+    }
+    var plusOpen = $('plusPanel') && $('plusPanel').classList.contains('open');
+    if (plusOpen) {
+      $('plusPanel').classList.remove('open');
+      e.preventDefault();
+      return;
+    }
+    var chatOpen = $('chatPage') && $('chatPage').classList.contains('show');
+    if (chatOpen) {
+      $('chatPage').classList.remove('show');
+      activeId = null;
+      e.preventDefault();
+      return;
     }
   });
 
@@ -1814,114 +1856,7 @@
     };
   }
 
-  // 试听测试与调用生成真实音频流 (Web Audio API / TTS API 连通性)
-  if ($('voiceTestBtn')) {
-    $('voiceTestBtn').onclick = function() {
-      var text = ($('voiceTestText') && $('voiceTestText').value.trim()) || '你好呀，能听到我的声音吗？';
-      var base = ($('voiceBase') && $('voiceBase').value.trim()) || '';
-      var key = ($('voiceKey') && $('voiceKey').value.trim()) || '';
-      var model = ($('voiceModel') && $('voiceModel').value.trim()) || 'speech-02-hd';
-      var voiceId = ($('voiceId') && $('voiceId').value.trim()) || 'qingnian1_max';
-      var provider = ($('voicePresetSelect') && $('voicePresetSelect').value) || '';
-      var statusEl = $('voiceTestStatus');
-
-      if (statusEl) statusEl.textContent = '正在连接语音 API 并合成声音……';
-      $('voiceTestBtn').disabled = true;
-
-      if (!key) {
-        if (statusEl) statusEl.textContent = '提示：尚未填入API Key，正在启动本地声线连通性试听……';
-        playNativeSpeech(text);
-        $('voiceTestBtn').disabled = false;
-        return;
-      }
-
-      // 区分提供商路由
-      var isEleven = provider === 'elevenlabs' || base.indexOf('elevenlabs.io') !== -1;
-      var fetchUrl = '';
-      var fetchHeaders = {};
-      var fetchBody = '';
-
-      if (isEleven) {
-        // ElevenLabs 专用 REST 端点
-        var elBase = base ? base.replace(/\/v1\/?$/, '') : 'https://api.elevenlabs.io';
-        var actualVoiceId = voiceId || 'AsKyuFhJ2EuOMhWsc4Xq';
-        fetchUrl = elBase + '/v1/text-to-speech/' + encodeURIComponent(actualVoiceId);
-        fetchHeaders = {
-          'Content-Type': 'application/json',
-          'xi-api-key': key
-        };
-        fetchBody = JSON.stringify({
-          text: text,
-          model_id: model || 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.8
-          }
-        });
-      } else {
-        // 标准 OpenAI /v1/audio/speech 规范接口 (包括聚合中转站、Mossland、自建TTS)
-        var cleanBase = (base || 'https://api.openai.com/v1').replace(/\/audio\/speech\/?$/, '').replace(/\/v1\/?$/, '') + '/v1';
-        fetchUrl = cleanBase + '/audio/speech';
-        fetchHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + key
-        };
-        fetchBody = JSON.stringify({
-          model: model || 'tts-1',
-          input: text,
-          voice: voiceId || 'alloy'
-        });
-      }
-
-      fetch(fetchUrl, {
-        method: 'POST',
-        headers: fetchHeaders,
-        body: fetchBody
-      }).then(function(resp) {
-        if (!resp.ok) {
-          return resp.text().then(function(errTxt) {
-            var detail = '';
-            try {
-              var jsonErr = JSON.parse(errTxt);
-              detail = (jsonErr.error && jsonErr.error.message) || jsonErr.message || jsonErr.detail || errTxt;
-            } catch(e) {
-              detail = errTxt;
-            }
-            throw new Error('HTTP ' + resp.status + ' (' + (detail.slice(0, 100)) + ')');
-          });
-        }
-        return resp.blob();
-      }).then(function(blob) {
-        var audioUrl = URL.createObjectURL(blob);
-        playAudio(audioUrl);
-        if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
-      }).catch(function(err) {
-        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message + '。启动本地声线兜底。';
-        playNativeSpeech(text);
-      }).finally(function() {
-        $('voiceTestBtn').disabled = false;
-      });
-    };
-  }
-
-  function playNativeSpeech(text) {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0;
-      u.pitch = 1.05;
-      window.speechSynthesis.speak(u);
-    } else {
-      toast('浏览器暂不支持本地语音');
-    }
-  }
-
-  function playAudio(url) {
-    var player = $('voiceAudioPlayer');
-    if (!player) return;
-    player.src = url;
-    player.play().catch(function() {});
-  }
+  
 
   // 聊天气泡内语音条点击事件委托绑定
   document.addEventListener('click', function(e) {
@@ -1963,7 +1898,7 @@
         };
       }
     } else {
-      playNativeSpeech('你好呀，今天想和我聊些什么？');
+      toast('未配置真实语音接口');
       setTimeout(function() {
         voiceWrap.classList.remove('playing');
         if (playIcon) playIcon.style.display = 'block';
