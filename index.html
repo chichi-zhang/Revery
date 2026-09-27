@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927_140">
+  <link rel="stylesheet" href="style.css?v=20260927_141">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -456,7 +456,7 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260927_140"></script>
+<script src="app.js?v=20260927_141"></script>
 
 
 
@@ -494,8 +494,11 @@
         </select>
       </div>
       <div class="field" id="customFontField" style="display:none; margin-bottom:0;">
-        <label style="font-size:12px; font-weight:600; margin-bottom:6px; display:block;">自定义 Font-Family 规则</label>
-        <input id="customFontInput" placeholder='例如: "MyCustomFont", "PingFang SC", sans-serif' style="width:100%; border:1px solid var(--line); border-radius:12px; background:var(--field); padding:10px 12px; font-size:13px;">
+        <label style="font-size:12px; font-weight:600; margin-bottom:6px; display:block;">从本地选择字体文件</label>
+        <input id="customFontFile" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" style="display:none;">
+        <button type="button" id="chooseCustomFontBtn" style="width:100%; border:1px solid var(--line); border-radius:12px; background:var(--field); color:var(--text); padding:11px 12px; font-size:13px; text-align:left;">选择字体文件（TTF / OTF / WOFF / WOFF2）</button>
+        <div id="customFontFileStatus" style="font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.45;">字体只保存在当前浏览器本地，不会上传到服务器。</div>
+        <button type="button" id="removeCustomFontBtn" style="display:none; margin-top:8px; border:0; background:transparent; color:var(--danger); padding:0; font-size:12px;">移除本地字体</button>
       </div>
     </div>
 
