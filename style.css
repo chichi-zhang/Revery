@@ -1998,3 +1998,34 @@ html[data-theme="light"] .msg-time-pill {
   from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 0.95; transform: translateY(0); }
 }
+
+
+/* 小狗回忆录：纯文本浅灰色小字体，点击翻看上一页历史 */
+.dog-memories-bar-row {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 12px 0 16px !important;
+  width: 100% !important;
+}
+
+.dog-memories-text-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: var(--text-sub, rgba(255, 255, 255, 0.45)) !important;
+  font-size: 11.5px !important;
+  letter-spacing: 0.5px !important;
+  cursor: pointer !important;
+  padding: 4px 10px !important;
+  text-decoration: none !important;
+  user-select: none !important;
+  transition: opacity 0.2s ease, color 0.2s ease !important;
+}
+
+.dog-memories-text-btn:hover,
+.dog-memories-text-btn:active {
+  opacity: 0.85 !important;
+  color: var(--text-main, rgba(255, 255, 255, 0.75)) !important;
+}
