@@ -9,37 +9,16 @@
       location: '📍 Your private universe',
       avatar: fallbackAvatar
     },
-    api: { name: '', base: '', key: '', model: '' },
+    api: { name: '格脉中转', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
+    apiPresets: [
+      { name: '格脉中转 (gemai)', base: 'https://api.gemai.cc/v1', key: '', model: 'gpt-4o' },
+      { name: 'OpenAI 官方', base: 'https://api.openai.com/v1', key: '', model: 'gpt-4o' },
+      { name: 'DeepSeek 官方', base: 'https://api.deepseek.com/v1', key: '', model: 'deepseek-chat' },
+      { name: '硅基流动 (SiliconFlow)', base: 'https://api.siliconflow.cn/v1', key: '', model: 'deepseek-ai/DeepSeek-V3' },
+      { name: 'OpenRouter', base: 'https://openrouter.ai/api/v1', key: '', model: 'openai/gpt-4o' }
+    ],
     settings: { theme: 'dark' },
-    characters: [
-      {
-        id: 'xie',
-        name: '谢尽欢',
-        avatar: 'https://imgbed.heliar.top/i/IsB-467lt3OstHl__Camera_XHS_1790267121539notes_pre_post_1040g3k0325f0b2k3l0005nd9hjmg8tu2p404iug_1790325127415edit.jpg',
-        greeting: '你终于来了，我刚才还在等你。',
-        prompt: '',
-        unread: 2,
-        messages: [{ role: 'assistant', text: '你终于来了，我刚才还在等你。', time: '14:17' }]
-      },
-      {
-        id: 'daddy',
-        name: '我家那daddy',
-        avatar: 'https://imgbed.heliar.top/i/7b1PX-p63NyM8IgQ_Screenshot_2026-08-14-15-34-38-238_com.xingin.xhs_1786692962059edit.webp',
-        greeting: '今天确实是个好天气。',
-        prompt: '',
-        unread: 0,
-        messages: [{ role: 'assistant', text: '今天确实是个好天气。', time: '昨天' }]
-      },
-      {
-        id: 'sheng',
-        name: '生生',
-        avatar: 'https://imgbed.heliar.top/i/tg-MzxYRXp0TacOv_Camera_1040g3k03247963sj0m305ocsvk141fd7cvf5heg_1789280486022edit.webp',
-        greeting: '要不要跟我聊一会儿？',
-        prompt: '',
-        unread: 1,
-        messages: [{ role: 'assistant', text: '要不要跟我聊一会儿？', time: '星期五' }]
-      }
-    ]
+    characters: []
   };
 
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -47,19 +26,13 @@
     try {
       var raw = localStorage.getItem(KEY) || localStorage.getItem(LEGACY_KEY);
       var x = raw ? JSON.parse(raw) : null;
-      if (x && x.profile && x.characters) {
+      if (x && x.profile && Array.isArray(x.characters)) {
         x.settings = x.settings || { theme: 'dark' };
-        if (!localStorage.getItem(KEY) && x.profile.brand === 'bewitchment') x.profile.brand = 'Revery';
-        // 自动升级默认角色卡头像
-        var newAvatars = {
-          'xie': 'https://imgbed.heliar.top/i/IsB-467lt3OstHl__Camera_XHS_1790267121539notes_pre_post_1040g3k0325f0b2k3l0005nd9hjmg8tu2p404iug_1790325127415edit.jpg',
-          'daddy': 'https://imgbed.heliar.top/i/7b1PX-p63NyM8IgQ_Screenshot_2026-08-14-15-34-38-238_com.xingin.xhs_1786692962059edit.webp',
-          'sheng': 'https://imgbed.heliar.top/i/tg-MzxYRXp0TacOv_Camera_1040g3k03247963sj0m305ocsvk141fd7cvf5heg_1789280486022edit.webp'
-        };
-        x.characters.forEach(function(c) {
-          if (newAvatars[c.id] && (!c.avatar || c.avatar === fallbackAvatar || c.avatar.indexOf('data:image/svg') === 0)) {
-            c.avatar = newAvatars[c.id];
-          }
+        if (!x.api) x.api = clone(defaults.api);
+        // 清理旧演示数据
+        var dummyIds = ['xie', 'daddy', 'sheng'];
+        x.characters = x.characters.filter(function(c) {
+          return dummyIds.indexOf(c.id) === -1;
         });
         return x;
       }
@@ -224,6 +197,12 @@
     var curAv = c.avatar || fallbackAvatar;
     if ($('chatCustomAvatar')) $('chatCustomAvatar').value = (c.avatar && c.avatar !== fallbackAvatar) ? c.avatar : '';
     if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = curAv;
+    
+    // 初始化我方头像
+    var userAv = (state.profile && state.profile.avatar) || fallbackAvatar;
+    if ($('chatCustomUserAvatar')) $('chatCustomUserAvatar').value = (state.profile && state.profile.avatar && state.profile.avatar !== fallbackAvatar) ? state.profile.avatar : '';
+    if ($('chatCustomUserAvatarPreview')) $('chatCustomUserAvatarPreview').src = userAv;
+
     if ($('chatCustomBg')) $('chatCustomBg').value = c.customBg || '';
     if ($('chatCustomCss')) $('chatCustomCss').value = c.customCss || '';
     if ($('chatCustomAiRemark')) $('chatCustomAiRemark').value = c.remarkName || '';
@@ -247,7 +226,7 @@
     };
   }
 
-  // 头像本地文件选择
+  // 角色头像本地文件选择
   if ($('chatCustomAvatarFile')) {
     $('chatCustomAvatarFile').onchange = function(e) {
       var f = e.target.files && e.target.files[0];
@@ -256,18 +235,42 @@
         r.onload = function(evt) {
           if ($('chatCustomAvatar')) $('chatCustomAvatar').value = evt.target.result;
           if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = evt.target.result;
-          toast('头像选取成功！');
+          toast('角色头像选取成功！');
         };
         r.readAsDataURL(f);
       }
     };
   }
 
-  // 头像 URL 输入同步预览
+  // 角色头像 URL 输入同步预览
   if ($('chatCustomAvatar')) {
     $('chatCustomAvatar').oninput = function() {
       var val = this.value.trim();
       if ($('chatCustomAvatarPreview')) $('chatCustomAvatarPreview').src = val || fallbackAvatar;
+    };
+  }
+
+  // 我方头像本地文件选择 (新增)
+  if ($('chatCustomUserAvatarFile')) {
+    $('chatCustomUserAvatarFile').onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) {
+        var r = new FileReader();
+        r.onload = function(evt) {
+          if ($('chatCustomUserAvatar')) $('chatCustomUserAvatar').value = evt.target.result;
+          if ($('chatCustomUserAvatarPreview')) $('chatCustomUserAvatarPreview').src = evt.target.result;
+          toast('我方头像选取成功！');
+        };
+        r.readAsDataURL(f);
+      }
+    };
+  }
+
+  // 我方头像 URL 输入同步预览 (新增)
+  if ($('chatCustomUserAvatar')) {
+    $('chatCustomUserAvatar').oninput = function() {
+      var val = this.value.trim();
+      if ($('chatCustomUserAvatarPreview')) $('chatCustomUserAvatarPreview').src = val || fallbackAvatar;
     };
   }
 
@@ -574,12 +577,80 @@
     m.onclick = function(e) { if (e.target === m) closeModals(); };
   });
 
+  var API_PRESETS = {
+    'gemai': { name: '格脉中转', base: 'https://api.gemai.cc/v1', model: 'gpt-4o' },
+    'openai': { name: 'OpenAI 官方', base: 'https://api.openai.com/v1', model: 'gpt-4o' },
+    'deepseek': { name: 'DeepSeek 官方', base: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+    'siliconflow': { name: '硅基流动', base: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V3' },
+    'openrouter': { name: 'OpenRouter', base: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o' }
+  };
+
   function fillApi() {
     var a = state.api || {};
     $('apiName').value = a.name || '';
     $('apiBase').value = a.base || '';
     $('apiKey').value = a.key || '';
     $('apiModel').value = a.model || '';
+    if ($('apiPresetSelect')) $('apiPresetSelect').value = '';
+  }
+
+  if ($('apiPresetSelect')) {
+    $('apiPresetSelect').onchange = function() {
+      var key = this.value;
+      if (API_PRESETS[key]) {
+        var p = API_PRESETS[key];
+        $('apiName').value = p.name;
+        $('apiBase').value = p.base;
+        $('apiModel').value = p.model;
+        toast('已载入 ' + p.name + ' 预设');
+      }
+    };
+  }
+
+  // 连通性测试
+  if ($('testApiBtn')) {
+    $('testApiBtn').onclick = function() {
+      var base = $('apiBase').value.trim();
+      var key = $('apiKey').value.trim();
+      var model = $('apiModel').value.trim() || 'gpt-4o';
+      if (!base || !key) {
+        toast('请先填写 Base URL 和 API Key');
+        return;
+      }
+      var btn = $('testApiBtn');
+      btn.textContent = '正在测试连接……';
+      btn.disabled = true;
+
+      var cleanBase = base.replace(/\/+$/, '');
+      fetch(cleanBase + '/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: 'user', text: 'Hi', content: 'Hi' }],
+          max_tokens: 5
+        })
+      }).then(function(resp) {
+        btn.textContent = '⚡ 连通性测试';
+        btn.disabled = false;
+        if (resp.ok) {
+          toast('✅ API 连接成功！模型响应正常！');
+        } else {
+          resp.text().then(function(txt) {
+            toast('❌ 连接报错 ' + resp.status + ': ' + txt.slice(0, 60));
+          }).catch(function() {
+            toast('❌ 连接报错 ' + resp.status);
+          });
+        }
+      }).catch(function(err) {
+        btn.textContent = '⚡ 连通性测试';
+        btn.disabled = false;
+        toast('❌ 网络或跨域错误: ' + (err.message || '请检查 Base URL'));
+      });
+    };
   }
 
   
@@ -615,6 +686,11 @@
     var newAv = $('chatCustomAvatar') ? $('chatCustomAvatar').value.trim() : '';
     if (newAv) {
       c.avatar = newAv;
+    }
+    var newUserAv = $('chatCustomUserAvatar') ? $('chatCustomUserAvatar').value.trim() : '';
+    if (newUserAv) {
+      if (!state.profile) state.profile = {};
+      state.profile.avatar = newUserAv;
     }
     if ($('chatCustomBg')) {
       c.customBg = $('chatCustomBg').value.trim();
@@ -722,6 +798,120 @@
     });
   };
 
+  function requestReply(c) {
+    if (!c) return;
+    var a = state.api || {};
+    if (!a.base || !a.key) {
+      toast('未配置 API 密钥，请在侧边栏「API 与模型」中设置');
+      c.messages.push({
+        role: 'assistant',
+        text: '【系统提示】尚未配置 API 密钥或中转站地址。请点击右上角打开侧边栏，进入「API 与模型」填入您的中转站 Key 和 Base URL。',
+        time: time()
+      });
+      save();
+      renderMessages(c);
+      render();
+      return;
+    }
+
+    var cleanBase = a.base.trim().replace(/\/+$/, '');
+    var modelName = (a.model && a.model.trim()) || 'gpt-4o';
+    
+    // 构建上下文消息列表
+    var apiMessages = [];
+    var systemPrompt = (c.prompt && c.prompt.trim()) || '你是一个有温度的伴侣角色，用自然生动的语气与用户对话。';
+    
+    // 注入角色人设与双向称呼
+    var userName = getUserCallingName(c);
+    var charName = getCharDisplayName(c);
+    systemPrompt += '\n[当前身份环境] 你的名字是: ' + charName + '；用户的名字是: ' + userName + '。请严格保持该人设。';
+
+    apiMessages.push({ role: 'system', content: systemPrompt });
+
+    // 取最近 16 条消息上下文
+    var recent = c.messages.slice(-16);
+    recent.forEach(function(m) {
+      if (m.type === 'image') {
+        apiMessages.push({ role: m.role, content: '[用户发送了一张图片]' });
+      } else if (m.type === 'file') {
+        apiMessages.push({ role: m.role, content: '[用户发送了文件: ' + (m.fileName || '文档') + ']' });
+      } else if (m.text) {
+        apiMessages.push({ role: m.role, content: m.text });
+      }
+    });
+
+    // 创建一条正在生成的占位气泡
+    var tempMsg = { role: 'assistant', text: '正在输入中……', time: time(), isPending: true };
+    c.messages.push(tempMsg);
+    save();
+    renderMessages(c);
+
+    fetch(cleanBase + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + a.key
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: apiMessages,
+        temperature: 0.85
+      })
+    }).then(function(resp) {
+      if (!resp.ok) {
+        return resp.text().then(function(errTxt) {
+          throw new Error('API 报错 HTTP ' + resp.status + ': ' + errTxt.slice(0, 80));
+        });
+      }
+      return resp.json();
+    }).then(function(data) {
+      var replyText = '';
+      if (data && data.choices && data.choices[0] && data.choices[0].message) {
+        replyText = data.choices[0].message.content || '';
+      }
+      if (!replyText) replyText = '（AI 未返回内容）';
+      
+      // 检查是否有自主改备注指令
+      var aiRemarkMatch = replyText.match(/\[REMARK_AI:\s*([^\]]+)\]/);
+      if (aiRemarkMatch) {
+        var newAiRemark = aiRemarkMatch[1].trim();
+        c.remarkName = newAiRemark;
+        replyText = replyText.replace(/\[REMARK_AI:\s*[^\]]+\]/g, '').trim();
+        toast('Ta 把你给Ta的备注换成了: ' + newAiRemark);
+      }
+      var userRemarkMatch = replyText.match(/\[REMARK_USER:\s*([^\]]+)\]/);
+      if (userRemarkMatch) {
+        var newUserRemark = userRemarkMatch[1].trim();
+        c.userRemark = newUserRemark;
+        replyText = replyText.replace(/\[REMARK_USER:\s*[^\]]+\]/g, '').trim();
+        toast('Ta 把对你的称呼改成了: ' + newUserRemark);
+      }
+
+      // 替换掉占位消息
+      var idx = c.messages.indexOf(tempMsg);
+      if (idx !== -1) {
+        c.messages[idx] = { role: 'assistant', text: replyText, time: time() };
+      } else {
+        c.messages.push({ role: 'assistant', text: replyText, time: time() });
+      }
+      save();
+      renderMessages(c);
+      render();
+    }).catch(function(err) {
+      var idx = c.messages.indexOf(tempMsg);
+      var errNotice = '【请求失败】' + (err.message || '网络连接超时');
+      if (idx !== -1) {
+        c.messages[idx] = { role: 'assistant', text: errNotice, time: time() };
+      } else {
+        c.messages.push({ role: 'assistant', text: errNotice, time: time() });
+      }
+      save();
+      renderMessages(c);
+      render();
+      toast(errNotice);
+    });
+  }
+
   $('composer').onsubmit = function(e) {
     e.preventDefault();
     var text = $('messageInput').value.trim(), c = character(activeId);
@@ -732,17 +922,24 @@
     renderMessages(c);
     if ($('plusPanel')) $('plusPanel').classList.remove('open');
     render();
-    setTimeout(function() {
-      c.messages.push({
-        role: 'assistant',
-        text: '这是本地原型回复。配置 API 并接入后端后，我会真正按照角色设定回答。',
-        time: time()
-      });
-      save();
-      renderMessages(c);
-    if ($('plusPanel')) $('plusPanel').classList.remove('open');
-      render();
-    }, 500);
+
+    var a = state.api || {};
+    if (a.base && a.key) {
+      // 真实调用在线 API 接口回答
+      requestReply(c);
+    } else {
+      setTimeout(function() {
+        c.messages.push({
+          role: 'assistant',
+          text: '（尚未配置 API 密钥，可在侧边栏「API 与模型」中填入中转站/官方 Key，保存后我将按照真实人设回答你。）',
+          time: time()
+        });
+        save();
+        renderMessages(c);
+        if ($('plusPanel')) $('plusPanel').classList.remove('open');
+        render();
+      }, 500);
+    }
   };
 
   $('shareBtn').onclick = function() {
