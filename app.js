@@ -1672,8 +1672,7 @@
       $('voiceTestBtn').disabled = true;
 
       if (!key) {
-        if (statusEl) statusEl.textContent = '提示：尚未填入API Key，正在启动本地声线连通性试听……';
-        playNativeSpeech(text);
+        if (statusEl) statusEl.textContent = '❌ 请先填入 API Key 才能进行在线语音合成！';
         $('voiceTestBtn').disabled = false;
         return;
       }
@@ -1791,8 +1790,7 @@
         playAudio(audioUrl);
         if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
       }).catch(function(err) {
-        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message + '。启动本地声线兜底。';
-        playNativeSpeech(text);
+        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message;
       }).finally(function() {
         $('voiceTestBtn').disabled = false;
       });
@@ -1828,8 +1826,7 @@
       $('voiceTestBtn').disabled = true;
 
       if (!key) {
-        if (statusEl) statusEl.textContent = '提示：尚未填入API Key，正在启动本地声线连通性试听……';
-        playNativeSpeech(text);
+        if (statusEl) statusEl.textContent = '❌ 请先填入 API Key 才能进行在线语音合成！';
         $('voiceTestBtn').disabled = false;
         return;
       }
@@ -1895,8 +1892,7 @@
         playAudio(audioUrl);
         if (statusEl) statusEl.textContent = '✅ API 连通成功！音频生成并播放中……';
       }).catch(function(err) {
-        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message + '。启动本地声线兜底。';
-        playNativeSpeech(text);
+        if (statusEl) statusEl.textContent = '❌ 请求失败: ' + err.message;
       }).finally(function() {
         $('voiceTestBtn').disabled = false;
       });
