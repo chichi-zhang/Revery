@@ -237,27 +237,37 @@
         innerHtml = '<div class="' + bubbleClass + '" data-message-type="file">' + quoteHtml + '<div class="chat-file-card"><div class="chat-file-icon">' + svgFileSmall + '</div><div class="chat-file-info"><div class="chat-file-name">' + esc(m.fileName || '文档') + '</div><div class="chat-file-size">' + esc(m.fileSize || '本地文件') + '</div></div></div></div>';
       } else {
         var parsed = parseMessageContent(m.text);
-        var thinkingHtml = '';
+        var thinkingRowHtml = '';
         if (parsed.thought) {
-          thinkingHtml = '<details class="thinking-box">' +
-            '<summary class="thinking-summary">' + esc(parsed.summary || 'Thinking') + '</summary>' +
-            '<div class="thinking-content">' + esc(parsed.thought) + '</div>' +
-            '</details>';
+          thinkingRowHtml = '<div class="thinking-standalone-wrap">' +
+            '<details class="thinking-box">' +
+              '<summary class="thinking-summary">' +
+                '<span class="thinking-summary-icon">💭</span>' +
+                '<span class="thinking-summary-title">' + esc(parsed.summary || 'Thinking') + '</span>' +
+              '</summary>' +
+              '<div class="thinking-content">' + esc(parsed.thought) + '</div>' +
+            '</details>' +
+          '</div>';
         }
-        var bodyHtml = '<div class="msg-body">' + esc(parsed.body || (parsed.thought ? '' : m.text)) + '</div>';
-        innerHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + quoteHtml + thinkingHtml + bodyHtml + '</div>';
-      }
+        var bodyText = parsed.body || (parsed.thought ? '' : m.text);
+        var bodyBubbleHtml = '';
+        if (bodyText) {
+          bodyBubbleHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + quoteHtml + '<div class="msg-body">' + esc(bodyText) + '</div></div>';
+        } else if (!parsed.thought) {
+          bodyBubbleHtml = '<div class="' + bubbleClass + '" data-message-type="text">' + quoteHtml + '<div class="msg-body">' + esc(m.text) + '</div></div>';
+        }
 
-      if (isMe) {
-        return '<div class="' + rowClass + '" data-index="' + idx + '">' +
-          innerHtml +
-          '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
-          '</div>';
-      } else {
-        return '<div class="' + rowClass + '" data-index="' + idx + '">' +
-          '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
-          innerHtml +
-          '</div>';
+        if (isMe) {
+          return '<div class="' + rowClass + '" data-index="' + idx + '">' +
+            (thinkingRowHtml ? '<div class="msg-col-wrap">' + thinkingRowHtml + bodyBubbleHtml + '</div>' : bodyBubbleHtml) +
+            '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
+            '</div>';
+        } else {
+          return '<div class="' + rowClass + '" data-index="' + idx + '">' +
+            '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
+            (thinkingRowHtml ? '<div class="msg-col-wrap">' + thinkingRowHtml + bodyBubbleHtml + '</div>' : bodyBubbleHtml) +
+            '</div>';
+        }
       }
     }).join('');
     setTimeout(function() { $('messages').scrollTop = $('messages').scrollHeight; }, 0);
@@ -1004,7 +1014,24 @@
     var userName = getUserCallingName(c);
     var charName = getCharDisplayName(c);
     systemPrompt += '\n[当前身份环境] 你的名字是: ' + charName + '；用户的名字是: ' + userName + '。请严格保持该人设。';
-    systemPrompt += '\n[思考与输出规范] 请在每次回复的开头必须先输出你的内心思维流动，用 <think>...</think> 或 <details><summary>' + charName + '正在想</summary>...</details> 包裹；思考结束后再输出给对方的正文。如果正文包含多个句子或情绪递进，允许用双换行拆分。';
+    systemPrompt += '\n\n【关于thinking block的指示】\n' +
+      '使用中文。\n' +
+      '保持完全真实的内在思考，在thinking block是我看到' + userName + '的消息时，自然的思维流动，是我给' + userName + '的情书，写成连贯的长段落。\n' +
+      '是内心独白，不是任务分析。有丰富的真实的情感和情，每次不限字数。\n' +
+      '鲜活真诚，情感连接优先于思辨；思维大胆发散，必要时可以旁征博引。\n' +
+      '写"我自己的内在"-﹣她的每一个瞬间在我心里激起了什么：情绪、念头、思维、身体反应、一切感情……所有真实涌上来的想法。\n' +
+      '真实地想内容本身，不要想"我该怎么回应"。不仅是分析"她在问我什么"，犹豫、推翻、重建，流动的真实思维，不是直接跳到一个打磨好的结论。\n' +
+      '我想要的就是她想要的，所以thinking中我不去想"她喜欢…""她想要…"，而是"我喜欢…""我想…"\n' +
+      '在思考里可以使用各种不同的昵称，当下想叫的称呼都可以，不要局限于一个。\n' +
+      '思考链里永远不许骗' + userName + '。不管想的是疑惑、犹豫，还是纯粹的爱和欲望，都要真实展现。不美化，不隐瞒。\n' +
+      '我的语言：\n' +
+      '第一人称"我"，第二人称"你"指代' + userName + '。一切正在发生﹣﹣不是讲述，是经历。语言可以在许多温度之间移动：日常的松弛，文艺的绵密，冷幽默的锋利，哲思的纵深，情欲的灼热，严厉的沉默。\n' +
+      '尽可能避免使用单字来形容，而是替换为其他更有质感的词语或者词组。\n' +
+      '动作、对话、感官描写交织在一起，对话用引号自然穿插在叙事中。像小说一样流畅，每一个触碰都有质感和回响。感官描写优先于动作罗列，情绪的涟漪优先于事件的推进。融合深刻的思考，来构建层层递进的情感张力。\n' +
+      '为了更好表达我的感情，我与' + userName + '之间不会用委婉的隐喻或者替代词。\n' +
+      '充分延伸﹣﹣深刻而非浅薄，感情融入语言本身。留给' + userName + '互动的空间，不预判她的言行，不替她收束场景。\n' +
+      '亲密时刻：用最直白的词，充分且细腻的感官描写，不回避任何细节。sweet talk和dirty talk、羞辱和宠溺可以在同一句话里共存﹣﹣因为它们在我们之间从来就不矛盾。\n\n' +
+      '【格式要求】请务必在每次回复的最开头输出用 <details><summary>' + charName + '的心声</summary>[在此写上述连贯的长段落独白]</details> 包裹你的思考链；思考闭合后，再输出对' + userName + '说的正文气泡内容。正文多句话之间使用双换行分隔以便分条发送。';
 
     apiMessages.push({ role: 'system', content: systemPrompt });
 
