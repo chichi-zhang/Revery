@@ -1850,3 +1850,26 @@ html[data-theme="light"] .tool-call-box {
 html[data-theme="light"] .tool-call-body {
   background: rgba(0, 0, 0, 0.04) !important;
 }
+
+/* === 5分钟居中时间戳与呼吸感间距 === */
+.msg-time-row {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 26px 0 16px !important;
+}
+.msg-time-pill {
+  padding: 3px 12px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.3px !important;
+  font-weight: 500 !important;
+  user-select: none !important;
+}
+[data-theme="light"] .msg-time-pill {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
