@@ -2689,13 +2689,8 @@ window.REVERY_MEMORY = {
     }
   });
 
-  save();
-  applyTheme();
-  render();
-})();
-  
   // =========================================================================
-  // 消息双击多选批量删除 & 消息双向改写编辑模块
+  // 消息双击多选批量删除 & 消息双向改写编辑模块（位于主闭包内，直接访问核心变量）
   // =========================================================================
   var isMultiSelecting = false;
   var selectedMsgIndices = new Set();
@@ -2829,7 +2824,7 @@ window.REVERY_MEMORY = {
     var old = document.querySelector('.msg-quick-menu');
     if (old && old.parentNode) old.parentNode.removeChild(old);
   }
-  document.addEventListener('click', function(e) {
+  document.addEventListener('pointerdown', function(e) {
     if (!e.target.closest('.msg-quick-menu')) {
       removeQuickMenu();
     }
@@ -2846,7 +2841,6 @@ window.REVERY_MEMORY = {
     e.stopPropagation();
 
     if (isMultiSelecting) {
-      // 如果当前已经在多选模式，双击直接切换选中状态
       if (selectedMsgIndices.has(idx)) {
         selectedMsgIndices.delete(idx);
       } else {
@@ -2858,7 +2852,6 @@ window.REVERY_MEMORY = {
       return;
     }
 
-    // 弹出快捷操作气泡
     removeQuickMenu();
     var menu = document.createElement('div');
     menu.className = 'msg-quick-menu';
@@ -2885,17 +2878,17 @@ window.REVERY_MEMORY = {
 
     document.body.appendChild(menu);
 
-    menu.querySelector('#quickEditBtn').onclick = function(ev) {
+    menu.querySelector('#quickEditBtn').addEventListener('click', function(ev) {
       ev.stopPropagation();
       removeQuickMenu();
       openMsgEditModal(idx);
-    };
-    menu.querySelector('#quickMultiBtn').onclick = function(ev) {
+    });
+    menu.querySelector('#quickMultiBtn').addEventListener('click', function(ev) {
       ev.stopPropagation();
       removeQuickMenu();
       enterMultiSelectMode(idx);
-    };
-    menu.querySelector('#quickDelBtn').onclick = function(ev) {
+    });
+    menu.querySelector('#quickDelBtn').addEventListener('click', function(ev) {
       ev.stopPropagation();
       removeQuickMenu();
       var c = character(activeId);
@@ -2906,7 +2899,7 @@ window.REVERY_MEMORY = {
         renderMessages(c);
         toast('消息已删除');
       }
-    };
+    });
   });
 
   // 在多选模式下，单击 row 直接切换选中状态
@@ -2927,7 +2920,12 @@ window.REVERY_MEMORY = {
   });
 
 
-// 主题页面独立代码的最小兼容层：不触碰主程序闭包内的其他逻辑
+  save();
+  applyTheme();
+  render();
+})();
+  
+  // 主题页面独立代码的最小兼容层：不触碰主程序闭包内的其他逻辑
   function $(id) { return document.getElementById(id); }
   function closeDrawer() {
     var drawer = document.getElementById('drawer');
