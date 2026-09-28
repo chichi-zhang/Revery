@@ -960,6 +960,26 @@ window.REVERY_MEMORY = {
     if ($('chatCustomUserAvatarPreview')) $('chatCustomUserAvatarPreview').src = userAv;
 
     if ($('chatCustomBg')) $('chatCustomBg').value = c.customBg || '';
+
+    // 回显头像大小与圆角
+    var curAvSize = c.avatarSize || 36;
+    var curAvRadius = (c.avatarRadius !== undefined) ? c.avatarRadius : (c.avatarShape === 'square' ? 0 : (c.avatarShape === 'squircle' ? 8 : 18));
+    var curAvShape = c.avatarShape || (curAvRadius === 0 ? 'square' : (curAvRadius <= 10 ? 'squircle' : 'circle'));
+
+    if ($('chatAvatarSizeInput')) {
+      $('chatAvatarSizeInput').value = curAvSize;
+      if ($('chatAvatarSizeVal')) $('chatAvatarSizeVal').textContent = curAvSize + 'px';
+    }
+    if ($('chatAvatarRadiusInput')) {
+      $('chatAvatarRadiusInput').value = curAvRadius;
+      if ($('chatAvatarRadiusVal')) {
+        $('chatAvatarRadiusVal').textContent = curAvRadius + 'px' + (curAvRadius === 0 ? ' (纯方)' : (curAvRadius >= 18 ? ' (圆形)' : ' (圆角)'));
+      }
+    }
+    var shapeRadios = document.querySelectorAll('input[name="chatAvatarShape"]');
+    for (var sri = 0; sri < shapeRadios.length; sri++) {
+      shapeRadios[sri].checked = (shapeRadios[sri].value === curAvShape);
+    }
     if ($('chatCustomCss')) $('chatCustomCss').value = c.customCss || '';
     if ($('chatCustomAiRemark')) $('chatCustomAiRemark').value = c.remarkName || '';
     if ($('chatCustomUserRemark')) $('chatCustomUserRemark').value = c.userRemark || '';
@@ -1033,6 +1053,57 @@ window.REVERY_MEMORY = {
   }
 
   // 壁纸本地文件选择
+  
+  // 头像尺寸与圆角实时调节联动
+  if ($('chatAvatarSizeInput')) {
+    $('chatAvatarSizeInput').oninput = function() {
+      var sz = this.value;
+      if ($('chatAvatarSizeVal')) $('chatAvatarSizeVal').textContent = sz + 'px';
+      var c = character(activeId);
+      if (c) {
+        c.avatarSize = parseInt(sz, 10);
+        applyChatCustomTheme(c);
+      }
+    };
+  }
+
+  if ($('chatAvatarRadiusInput')) {
+    $('chatAvatarRadiusInput').oninput = function() {
+      var rad = parseInt(this.value, 10);
+      var shapeLabel = (rad === 0) ? ' (纯方)' : (rad >= 18 ? ' (圆形)' : ' (圆角)');
+      if ($('chatAvatarRadiusVal')) $('chatAvatarRadiusVal').textContent = rad + 'px' + shapeLabel;
+      var c = character(activeId);
+      if (c) {
+        c.avatarRadius = rad;
+        c.avatarShape = (rad === 0 ? 'square' : (rad <= 10 ? 'squircle' : 'circle'));
+        // 同步上方单选按钮
+        var shapeRadios = document.querySelectorAll('input[name="chatAvatarShape"]');
+        for (var sri = 0; sri < shapeRadios.length; sri++) {
+          shapeRadios[sri].checked = (shapeRadios[sri].value === c.avatarShape);
+        }
+        applyChatCustomTheme(c);
+      }
+    };
+  }
+
+  var shapeRadios = document.querySelectorAll('input[name="chatAvatarShape"]');
+  for (var sri = 0; sri < shapeRadios.length; sri++) {
+    shapeRadios[sri].onchange = function() {
+      var val = this.value;
+      var targetRad = (val === 'square' ? 0 : (val === 'squircle' ? 8 : 18));
+      if ($('chatAvatarRadiusInput')) $('chatAvatarRadiusInput').value = targetRad;
+      if ($('chatAvatarRadiusVal')) {
+        $('chatAvatarRadiusVal').textContent = targetRad + 'px' + (val === 'square' ? ' (纯方)' : (val === 'circle' ? ' (圆形)' : ' (圆角)'));
+      }
+      var c = character(activeId);
+      if (c) {
+        c.avatarShape = val;
+        c.avatarRadius = targetRad;
+        applyChatCustomTheme(c);
+      }
+    };
+  }
+
   if ($('chatCustomBgFile')) {
     $('chatCustomBgFile').onchange = function(e) {
       var f = e.target.files && e.target.files[0];
@@ -1652,7 +1723,15 @@ window.REVERY_MEMORY = {
   function applyChatCustomTheme(c) {
     var styleTag = $('ReveryCustomChatStyle');
     if (styleTag) {
-      styleTag.textContent = c && c.customCss ? c.customCss : '';
+      var customCss = (c && c.customCss) ? c.customCss : '';
+      var avSize = (c && c.avatarSize) ? c.avatarSize : 36;
+      var avRadius = (c && c.avatarRadius !== undefined) ? c.avatarRadius : (c && c.avatarShape === 'square' ? 0 : (c && c.avatarShape === 'squircle' ? 8 : 9999));
+      var avRadiusPx = (avRadius === 9999 || avRadius > 28) ? '50%' : (avRadius + 'px');
+
+      var avatarDynamicCss = '\n/* 动态头像外观 */\n' +
+        '.msg-avatar { width: ' + avSize + 'px !important; height: ' + avSize + 'px !important; border-radius: ' + avRadiusPx + ' !important; }\n';
+
+      styleTag.textContent = avatarDynamicCss + '\n' + customCss;
     }
     var msgBox = $('messages');
     var chatPageEl = $('chatPage');
@@ -1693,6 +1772,16 @@ window.REVERY_MEMORY = {
     if (newUserAv) {
       if (!state.profile) state.profile = {};
       state.profile.avatar = newUserAv;
+    }
+    if ($('chatAvatarSizeInput')) {
+      c.avatarSize = parseInt($('chatAvatarSizeInput').value, 10) || 36;
+    }
+    if ($('chatAvatarRadiusInput')) {
+      c.avatarRadius = parseInt($('chatAvatarRadiusInput').value, 10);
+    }
+    var checkedShape = document.querySelector('input[name="chatAvatarShape"]:checked');
+    if (checkedShape) {
+      c.avatarShape = checkedShape.value;
     }
     if ($('chatCustomBg')) {
       c.customBg = $('chatCustomBg').value.trim();
