@@ -570,6 +570,10 @@ window.REVERY_MEMORY = {
         '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
       '</div>';
 
+      // 检查当前行是否仅为思考过程/工具调用（无正文气泡）
+      var isOnlyThinking = (!isMe && !bodyBubbleHtml && (thinkingRowHtml || (parsed && parsed.thought)));
+      var avatarHtml = isOnlyThinking ? '' : ('<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">');
+
       if (isMe) {
         htmlBuffer += '<div class="' + multiRowClass + '" data-index="' + idx + '">' +
           selectCheckHtml +
@@ -577,9 +581,10 @@ window.REVERY_MEMORY = {
           '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
           '</div>';
       } else {
-        htmlBuffer += '<div class="' + multiRowClass + '" data-index="' + idx + '">' +
+        var rowExtraClass = isOnlyThinking ? ' thinking-only-row' : '';
+        htmlBuffer += '<div class="' + multiRowClass + rowExtraClass + '" data-index="' + idx + '">' +
           selectCheckHtml +
-          '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
+          avatarHtml +
           innerContentHtml +
           '</div>';
       }
@@ -1650,12 +1655,19 @@ window.REVERY_MEMORY = {
       styleTag.textContent = c && c.customCss ? c.customCss : '';
     }
     var msgBox = $('messages');
+    var chatPageEl = $('chatPage');
+    var bgUrl = (c && c.customBg) ? ('url(' + c.customBg + ')') : '';
     if (msgBox) {
-      if (c && c.customBg) {
-        msgBox.style.backgroundImage = 'url(' + c.customBg + ')';
-      } else {
-        msgBox.style.backgroundImage = '';
-      }
+      msgBox.style.backgroundImage = bgUrl;
+      msgBox.style.backgroundSize = 'cover';
+      msgBox.style.backgroundPosition = 'center';
+      msgBox.style.backgroundColor = 'transparent';
+    }
+    if (chatPageEl) {
+      chatPageEl.style.backgroundImage = bgUrl;
+      chatPageEl.style.backgroundSize = 'cover';
+      chatPageEl.style.backgroundPosition = 'center';
+      chatPageEl.style.backgroundRepeat = 'no-repeat';
     }
   }
 
