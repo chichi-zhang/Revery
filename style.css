@@ -2591,3 +2591,65 @@ html[data-theme="light"] .dog-memories-text-btn:active {
 .Revery-chat-composer.imessage-bottom-bar > * {
   pointer-events: auto !important;
 }
+
+
+/* ============================================================
+   大厂级 Edge-to-Edge 边到边沉浸与安全区避让（彻底根除底部黑条）
+   ============================================================ */
+html, body {
+  background: var(--bg) !important;
+  min-height: 100% !important;
+  min-height: 100dvh !important;
+  height: 100% !important;
+}
+
+#chatPage.page,
+.Revery-chat-page {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: var(--bg) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  overflow: hidden !important;
+}
+
+/* 消息流透明化，让全屏壁纸彻底通透贯穿到屏幕底部手势条下方 */
+#chatPage .messages,
+.Revery-chat-messages {
+  background: transparent !important;
+  background-color: transparent !important;
+  padding-bottom: calc(72px + max(var(--safe-bottom), env(safe-area-inset-bottom, 16px))) !important;
+}
+
+/* 悬浮底栏绝对定位浮在壁纸上，用 safe-area 保证手势不被遮挡 */
+#chatPage .composer,
+.Revery-chat-composer.imessage-bottom-bar {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  z-index: 95 !important;
+  padding: 6px 12px calc(8px + max(var(--safe-bottom), env(safe-area-inset-bottom, 16px))) !important;
+  box-sizing: border-box !important;
+  pointer-events: none !important;
+}
+
+#chatPage .composer > *,
+.Revery-chat-composer.imessage-bottom-bar > * {
+  pointer-events: auto !important;
+}
