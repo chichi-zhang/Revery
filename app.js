@@ -3018,9 +3018,9 @@ var ReveryFontManager = (function() {
 
   // === 浮生忆匣 全屏页面渲染与交互逻辑 ===
   function renderMemoryPage() {
-    var c = activeId ? character(activeId) : (state.characters && state.characters[0]);
+    var c = (activeId && character(activeId)) || (state.characters && state.characters.find(function(item){ return item.id === activeId; })) || (state.characters && state.characters[0]);
     if (!c) {
-      toast('请先选择或创建一个角色');
+      toast('请先在主页选择或添加一个角色');
       return;
     }
     var charDisplayName = getCharDisplayName(c);
@@ -3098,11 +3098,22 @@ var ReveryFontManager = (function() {
   if ($('openMemoryPageBtn')) {
     $('openMemoryPageBtn').onclick = function(e) {
       e.stopPropagation();
-      closeControlCenter();
+      closeDrawer();
       renderMemoryPage();
-      $('memoryPage').classList.add('show');
+      if ($('memoryPage')) $('memoryPage').classList.add('show');
     };
   }
+
+  // 事件委托兜底，确保无论何时点击都能无缝打开浮生忆匣
+  document.addEventListener('click', function(e) {
+    var target = e.target && e.target.closest ? e.target.closest('#openMemoryPageBtn') : null;
+    if (target) {
+      e.stopPropagation();
+      closeDrawer();
+      renderMemoryPage();
+      if ($('memoryPage')) $('memoryPage').classList.add('show');
+    }
+  }, true);
 
   // 返回按钮
   if ($('memoryPageBackBtn')) {
