@@ -2117,7 +2117,31 @@ window.REVERY_MEMORY = {
 
   
   // 监听回车发消息（支持移动端/PC回车即时响应，零卡顿）
+  // 监听 iMessage 输入框文本变化，实时切换声波波形与发送箭头
   if ($('messageInput')) {
+    var updateInputCapsuleState = function() {
+      var shell = $('messageInput').closest('.imessage-capsule-shell');
+      if (shell) {
+        if ($('messageInput').value.trim().length > 0) {
+          shell.classList.add('has-text');
+        } else {
+          shell.classList.remove('has-text');
+        }
+      }
+    };
+    $('messageInput').addEventListener('input', updateInputCapsuleState);
+    $('messageInput').addEventListener('change', updateInputCapsuleState);
+    
+    // 点击胶囊内的声波按钮直接呼叫角色发语音
+    if ($('imessageVoiceBtn')) {
+      $('imessageVoiceBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        var c = character(activeId);
+        if (c) generateCharVoiceMessage(c);
+        else toast('未选定角色');
+      });
+    }
+
     $('messageInput').addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -2153,6 +2177,7 @@ window.REVERY_MEMORY = {
 
     c.messages.push(newMsg);
     $('messageInput').value = '';
+    if (typeof updateInputCapsuleState === 'function') updateInputCapsuleState();
     save();
     renderMessages(c);
     if ($('plusPanel')) $('plusPanel').classList.remove('open');
