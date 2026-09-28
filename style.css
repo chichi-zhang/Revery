@@ -2379,13 +2379,22 @@ html[data-theme="light"] .dog-memories-text-btn:active {
   align-items: center !important;
   gap: 8px !important;
   width: 100% !important;
-  padding: 7px 10px calc(7px + var(--safe-bottom)) !important;
-  background: var(--topbar, rgba(18, 18, 20, 0.85)) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 6px 12px calc(8px + var(--safe-bottom)) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-top: none !important;
+  box-shadow: none !important;
   box-sizing: border-box !important;
   z-index: 95 !important;
+  pointer-events: none !important;
+}
+
+/* 内部按钮与输入框恢复点击响应 */
+.imessage-bottom-bar > * {
+  pointer-events: auto !important;
 }
 
 /* 左侧原生细圈 + 按钮 */
@@ -2421,15 +2430,18 @@ html[data-theme="light"] .dog-memories-text-btn:active {
 .imessage-capsule-shell {
   flex: 1 1 auto !important;
   min-width: 0 !important;
-  height: 38px !important;
-  background: rgba(120, 120, 128, 0.18) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  height: 40px !important;
+  background: var(--panel, rgba(120, 120, 128, 0.22)) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 9999px !important;
   display: flex !important;
   align-items: center !important;
-  padding: 0 4px 0 14px !important;
+  padding: 0 5px 0 14px !important;
   box-sizing: border-box !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
 }
 
 .imessage-capsule-shell:focus-within {
