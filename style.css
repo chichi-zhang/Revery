@@ -2532,3 +2532,62 @@ html[data-theme="light"] .dog-memories-text-btn:active {
 .imessage-capsule-shell.has-text .imessage-send-arrow-btn {
   display: flex !important;
 }
+
+
+/* === Thinking 思考块不显示头像，纯净独立展示 === */
+.msg-row.thinking-only-row {
+  padding-left: 6px !important;
+  margin: 4px 0 !important;
+}
+.msg-row.thinking-only-row .msg-avatar {
+  display: none !important;
+}
+.msg-row.thinking-only-row .thinking-standalone-wrap {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+
+/* ============================================================
+   聊天页面背景全景贯通与纯悬浮底栏（彻底击穿底部黑块与阴影）
+   ============================================================ */
+#chatPage.page,
+.Revery-chat-page {
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  overflow: hidden !important;
+}
+
+#chatPage .messages,
+.Revery-chat-messages {
+  background: transparent !important;
+  background-color: transparent !important;
+  padding-bottom: calc(65px + max(var(--safe-bottom), env(safe-area-inset-bottom, 12px))) !important;
+}
+
+/* 彻底将底栏定为绝对悬浮贴底，不占文档流黑底高度，直接悬浮在全屏壁纸之上 */
+#chatPage .composer,
+.Revery-chat-composer.imessage-bottom-bar {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+  z-index: 95 !important;
+  margin: 0 !important;
+  padding: 8px 12px calc(8px + max(var(--safe-bottom), env(safe-area-inset-bottom, 12px))) !important;
+}
+
+#chatPage .composer > *,
+.Revery-chat-composer.imessage-bottom-bar > * {
+  pointer-events: auto !important;
+}
