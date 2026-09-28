@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260928_011">
+  <link rel="stylesheet" href="style.css?v=20260928_012">
   <script>
     // 强制开屏安全防护：无论发生任何情况，最多800ms强制淡出移除开屏层
     setTimeout(function() {
@@ -456,9 +456,49 @@
     </div>
   </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260928_011"></script>
 
 
+<!-- 全屏浮生忆匣记忆库独立全屏页面 (覆盖整个屏幕，非弹窗) -->
+<div id="memoryPage" class="page">
+  <header class="chat-head cv-header" style="position:sticky; top:0; z-index:10; background:var(--topbar); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--line);">
+    <button type="button" class="icon-btn" id="memoryPageBackBtn" aria-label="返回">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="chat-title" style="flex:1; text-align:center;">
+      <h2 style="font-size:16px; font-weight:700; margin:0; letter-spacing:0.5px;">浮生忆匣</h2>
+      <div class="chat-subtitle" id="memoryCharSubtitle" style="font-size:11px; color:var(--muted);">羁绊沉淀 · 灵魂共振</div>
+    </div>
+    <div style="width:36px;"></div>
+  </header>
+
+  <div class="memory-header-info">
+    <div class="memory-stat-badge" id="memoryCountBadge">共 0 条沉淀记忆</div>
+    <button type="button" class="memory-action-pill-btn" id="addMemoryManualBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>镌刻记忆</span>
+    </button>
+  </div>
+
+  <div class="memory-search-bar-wrap">
+    <input type="text" class="memory-search-input" id="memorySearchInput" placeholder="搜索誓约、约定、日常关键词…">
+  </div>
+
+  <div class="memory-section">
+    <div class="memory-section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+      <span>核心誓约与锚点</span>
+    </div>
+    <div class="memory-card-list" id="permanentMemoryList"></div>
+  </div>
+
+  <div class="memory-section">
+    <div class="memory-section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <span>时光足迹与羁绊</span>
+    </div>
+    <div class="memory-card-list" id="dailyMemoryList"></div>
+  </div>
+</div>
 
 
 <!-- 全屏主题与外观设置独立全屏页面 (覆盖整个屏幕，非弹窗) -->
@@ -529,5 +569,12 @@
     <button type="button" class="primary" id="saveGlobalThemeBtn" style="width:100%; min-height:46px; border-radius:14px; font-size:14px; font-weight:700;">保存全站主题与字体</button>
   </div>
 </div>
+
+<script src="app.js?v=20260928_012"></script>
+
+
+
+
+
 </body>
 </html>
