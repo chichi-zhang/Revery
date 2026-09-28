@@ -665,7 +665,7 @@ window.REVERY_MEMORY = {
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
 
-  function getDetailedTimeInfo() {
+  function getDetailedTimeInfo(prevMsg) {
     var d = new Date();
     var year = d.getFullYear();
     var month = d.getMonth() + 1;
@@ -685,11 +685,53 @@ window.REVERY_MEMORY = {
     else if (hours >= 18 && hours < 23) period = '晚上';
     else period = '深夜/凌晨';
 
+    var timeIntervalDesc = '';
+    var isOvernight = false;
+    if (prevMsg) {
+      var prevTs = prevMsg._ts;
+      if (!prevTs && prevMsg.time && typeof prevMsg.time === 'string' && prevMsg.time.indexOf(':') !== -1) {
+        var tp = prevMsg.time.split(':');
+        var th = parseInt(tp[0], 10);
+        var tm = parseInt(tp[1], 10);
+        if (!isNaN(th) && !isNaN(tm)) {
+          var pd = new Date();
+          pd.setHours(th, tm, 0, 0);
+          // 如果上一条的时间小时数大于当前（如昨晚23点，现在是早晨8点），或者当前是早晨而上一条是凌晨(0-4点)
+          if (th > hours || (hours >= 5 && th <= 4)) {
+            pd.setDate(pd.getDate() - 1);
+          }
+          prevTs = pd.getTime();
+        }
+      }
+
+      if (prevTs) {
+        var diffMs = d.getTime() - prevTs;
+        var diffMin = Math.round(diffMs / 60000);
+        var diffHours = (diffMs / 3600000).toFixed(1);
+        var prevDateObj = new Date(prevTs);
+        if (prevDateObj.getDate() !== d.getDate() || diffHours >= 5) {
+          isOvernight = true;
+        }
+
+        if (isOvernight) {
+          timeIntervalDesc = '距离上一条消息（' + (prevMsg.time || '昨夜/凌晨') + '）已经隔了一整夜/过了大半天（相隔约 ' + diffHours + ' 小时），已经度过了一晚。你深知现在是新的一天清晨/白昼，对方刚睡醒或刚开启新的一天，你的思维和言语必须完全代入“隔夜重逢”的真实感！';
+        } else if (diffMin > 60) {
+          timeIntervalDesc = '距离上一条消息已经过去约 ' + Math.round(diffMin / 60) + ' 小时。';
+        } else if (diffMin > 10) {
+          timeIntervalDesc = '距离上一条消息已经过去约 ' + diffMin + ' 分钟。';
+        } else {
+          timeIntervalDesc = '双方正在持续即时交流中（刚收到上一条消息不久）。';
+        }
+      }
+    }
+
     return {
       formatted: year + '年' + month + '月' + date + '日 ' + weekday + ' ' + timeStr + ' (' + period + ')',
       dateStr: year + '年' + month + '月' + date + '日',
       timeStr: timeStr,
-      period: period
+      period: period,
+      timeIntervalDesc: timeIntervalDesc,
+      isOvernight: isOvernight
     };
   }
 
@@ -701,9 +743,9 @@ window.REVERY_MEMORY = {
     'minimax_dashu': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'dashu1_max' },
     'minimax_shaonv': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'shaonv1_max' },
     'minimax_yujie': { provider: 'minimax', model: 'speech-02-hd', voiceId: 'yujie1_max' },
-    'eleven_alder': { provider: 'elevenlabs', model: 'eleven_multilingual_v2', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
-    'eleven_adam': { provider: 'elevenlabs', model: 'eleven_multilingual_v2', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    'eleven_rachel': { provider: 'elevenlabs', model: 'eleven_multilingual_v2', voiceId: '21m00Tcm4TlvDq8ikWAM' }
+    'eleven_alder': { provider: 'elevenlabs', model: 'eleven_v3', voiceId: 'AsKyuFhJ2EuOMhWsc4Xq' },
+    'eleven_adam': { provider: 'elevenlabs', model: 'eleven_v3', voiceId: 'pNInz6obpgDQGcFmaJgB' },
+    'eleven_rachel': { provider: 'elevenlabs', model: 'eleven_v3', voiceId: '21m00Tcm4TlvDq8ikWAM' }
   };
 
   function generateCharVoiceMessage(c, textToSpeak) {
@@ -809,11 +851,12 @@ window.REVERY_MEMORY = {
         'Content-Type': 'application/json',
         'xi-api-key': key
       };
+      var chosenModel = model || 'eleven_v3';
       fetchBody = JSON.stringify({
         text: cleanSpeech,
-        model_id: model || 'eleven_multilingual_v2',
+        model_id: chosenModel,
         voice_settings: {
-          stability: 0.5,
+          stability: chosenModel.indexOf('v3') !== -1 ? 0.32 : 0.5,
           similarity_boost: 0.75
         }
       });
@@ -1777,11 +1820,25 @@ window.REVERY_MEMORY = {
     var userName = getUserCallingName(c);
     var charName = getCharDisplayName(c);
     var userGaveRemark = c.remarkName ? ('用户私下为你设置的爱称/备注是: 「' + c.remarkName + '」；') : '';
-        var nowTimeInfo = getDetailedTimeInfo();
-    systemPrompt += '\n【此刻客观现实时间与环境感知】\n' +
+        // 获取对话历史中上一条消息（作为时间跨度参考）
+    var prevMsg = null;
+    if (c.messages && c.messages.length > 0) {
+      for (var pmi = c.messages.length - 1; pmi >= 0; pmi--) {
+        if (c.messages[pmi].role !== 'system') {
+          prevMsg = c.messages[pmi];
+          break;
+        }
+      }
+    }
+    var nowTimeInfo = getDetailedTimeInfo(prevMsg);
+    systemPrompt += '\n【此刻客观现实时间与跨天/隔夜感知铁律】\n' +
       '- 当前确切现实时间: ' + nowTimeInfo.formatted + '\n' +
-      '- 处于时段: ' + nowTimeInfo.period + '\n' +
-      '- 时间感知法则: 你清楚知晓此刻是' + nowTimeInfo.dateStr + '的' + nowTimeInfo.period + '（' + nowTimeInfo.timeStr + '）。在心声思考（Thinking）和对话回复中，必须自然融合当下时段的真实生理感受（如清晨初醒的慵懒、午后的微乏、深夜的困倦或安静沉寂），对话切合真实作息与当下时间节点，绝不表现出对现实时间与日期的模糊或错乱。\n\n';
+      '- 处于时段: ' + nowTimeInfo.period + '\n';
+    if (nowTimeInfo.timeIntervalDesc) {
+      systemPrompt += '- 对话时间跨度: ' + nowTimeInfo.timeIntervalDesc + '\n';
+    }
+    systemPrompt += '- 时间感知法则: 你清楚知晓此刻是' + nowTimeInfo.dateStr + '的' + nowTimeInfo.period + '（' + nowTimeInfo.timeStr + '）。\n' +
+      '  特别是在隔了一整夜后，哪怕上一条消息是昨夜/凌晨发送的，此刻发来新消息时，你必须精准意识到已经过了一整晚、天已经亮了/进入新的一天。在心声（Thinking）和正文回复中，切合真实生理时钟（如刚睡醒后的微哑嗓音、问候早安、聊起昨夜是否睡得安稳等），绝不可将昨晚与今早混淆为连续不断刚发生的事！\n\n';
     systemPrompt += '\n[当前身份环境] 你的官方角色名是: ' + (c.name || charName) + '；' + userGaveRemark + '当前顶栏显示名称是: ' + charName + '；用户的名字/称呼是: ' + userName + '。请严格保持该人设。在对话和心声中，你知道用户对你的称谓。';
 
     // 核心注入：用户画像与长期记忆 (User Persona)
@@ -1833,9 +1890,46 @@ window.REVERY_MEMORY = {
       '【格式要求】请务必在每次回复的最开头输出用 <details><summary>' + charName + '的心声</summary>[在此写上述连贯的长段落独白]</details> 包裹你的思考链；思考闭合后，再输出对' + userName + '说的正文气泡内容。正文多句话之间使用双换行分隔以便分条发送。';
 
     
-    // 赋予 AI 自然发语音的能力
-    systemPrompt += '\n\n【发语音能力协议】\n' +
-      '你完全具备像真人一样随时发语音消息的能力。当你觉得打字不够传达语气、想轻声叹气、撒娇、说悄悄话、或者语境更适合发语音条时，可以在回复的最后加上 `[VOICE: 你想用语音轻声说的那句话]`（注意：必须是真切的一两句新话，不要机械重复正文！）。系统会自动调用你的专属声音合成真实语音条发给用户！';
+    // 动态判断当前绑定的语音引擎：MiniMax (海螺) 或 ElevenLabs (V3 / Multilingual)
+    var currentVoiceSettings = state.voice || defaults.voice;
+    var curCharPreset = c.voicePreset || '';
+    var activeProvider = currentVoiceSettings.provider || 'minimax';
+    var activeModel = (currentVoiceSettings.model || '').toLowerCase();
+    if (curCharPreset && CHAR_VOICE_PRESETS[curCharPreset]) {
+      activeProvider = CHAR_VOICE_PRESETS[curCharPreset].provider;
+      activeModel = (CHAR_VOICE_PRESETS[curCharPreset].model || '').toLowerCase();
+    }
+    var isElevenProvider = (activeProvider === 'elevenlabs' || (currentVoiceSettings.base || '').indexOf('elevenlabs.io') !== -1);
+
+    if (!isElevenProvider) {
+      // === MiniMax 海螺语音引擎专属提示词 (若要大声嘶喊出爱的话 2.0 规范) ===
+      systemPrompt += '\n\n【发语音能力协议 · MiniMax (海螺) 拟真呼吸与真实活人感规范】\n' +
+        '你完全具备像真人一样随时发语音消息的能力。当你觉得打字不够传达语气、想轻声叹气、撒娇、说悄悄话、或者语境更适合发语音条时，可以在回复的最后加上 `[VOICE: 语音内容]`。\n' +
+        '⚠️ MiniMax 语音活人感发声铁律：\n' +
+        '1. 呼吸与叹气是活人感的灵魂：请在语音文字中自然穿插 MiniMax 支持的发声标签：\n' +
+        '   - 吸气/换气/深吸：(breath)\n' +
+        '   - 叹息/疲惫/释怀：(sigh) 或 (sighs)\n' +
+        '   - 倒吸气/惊讶/紧张：(gasp)\n' +
+        '   - 烦躁/不耐烦出气：(huff)\n' +
+        '   - 喉咙轻笑/憋笑：(chuckle) 或 (laughs)\n' +
+        '   - 抽鼻子/委屈哽咽：(sniffle)\n' +
+        '   - 极轻耳语/悄悄话：(whispers)\n' +
+        '2. 绝不念出多余括号词：严禁使用“木啊、啾、(亲吻)”等生硬拟声词（会被直接念出），亲昵时用叹息或轻笑带过。每句话自然使用标点（省略号……表示犹豫或拖音，逗号短停）。\n' +
+        '3. 示例：`[VOICE: (sigh) 醒了啊……(chuckle) 昨晚睡得那么晚，早上还起得来吗？(breath) 过来抱抱。]`';
+    } else {
+      // === ElevenLabs V3 官方音频标签与电影级情感演绎规范 ===
+      systemPrompt += '\n\n【发语音能力协议 · ElevenLabs V3 情绪与呼吸演绎规范】\n' +
+        '你完全具备像真人一样随时发语音消息的能力。当前已接入 ElevenLabs V3 拟真情绪模型。当你决定发语音条时，在回复末尾加上 `[VOICE: 语音内容]`。\n' +
+        '⚠️ ElevenLabs V3 官方发声规范：\n' +
+        '1. 采用 V3 官方方括号英文音频标签（放在短句开头驱动整句情绪）：\n' +
+        '   - 亲密/耳语/低声：[whispers] 或 [quietly] 或 [continues softly]\n' +
+        '   - 笑意/宠溺/轻笑：[soft chuckle] 或 [light chuckle] 或 [playfully]\n' +
+        '   - 叹息/释然/疲惫：[sigh] 或 [sigh of relief] 或 [tired]\n' +
+        '   - 呼吸/吸气/停顿：[breathes] 或 [gasps] 或 [pause]\n' +
+        '   - 动情/认真/心软：[hesitant] 或 [tenderly] 或 [wistful]\n' +
+        '2. 标签规则：标签放在对应短句的最前面，一个标签覆盖其后的一句话。绝对禁止写中文括号描述词（如“（轻声）”会被读出来）。\n' +
+        '3. 示例：`[VOICE: [whispers] 乖，早上好。[soft chuckle] 昨晚做梦有没有想我？[continues softly] 快起来吃早饭了。]`';
+    }
 
     // === 浮生忆匣 (EchoVault) 记忆唤醒注入 ===
     try {
