@@ -861,26 +861,29 @@ window.REVERY_MEMORY = {
       }
       return resp.blob();
     }).then(function(blob) {
-      var audioUrl = URL.createObjectURL(blob);
-      var estSec = Math.max(2, Math.min(60, Math.round(cleanSpeech.length * 0.28 + 1)));
-      
-      c.messages.push({
-        role: 'assistant',
-        type: 'voice',
-        audioUrl: audioUrl,
-        duration: estSec,
-        text: cleanSpeech,
-        time: time()
-      });
-      save();
-      renderMessages(c);
+      var reader = new FileReader();
+      reader.onloadend = function() {
+        var base64Audio = reader.result;
+        var estSec = Math.max(2, Math.min(60, Math.round(cleanSpeech.length * 0.28 + 1)));
+        
+        c.messages.push({
+          role: 'assistant',
+          type: 'voice',
+          audioUrl: base64Audio,
+          duration: estSec,
+          text: cleanSpeech,
+          time: time()
+        });
+        save();
+        renderMessages(c);
 
-      // 触发 20 轮记忆自动提炼
-      try {
-        window.REVERY_MEMORY.checkAutoSummarize(c, a);
-      } catch(autoSummErr) {}
-      // 收到语音不自动抢播，用户点击播放按钮时才播放；点击语音气泡展开查看文字
-      toast('已收到 ' + getCharDisplayName(c) + ' 发来的语音消息 🎵');
+        // 触发 20 轮记忆自动提炼
+        try {
+          window.REVERY_MEMORY.checkAutoSummarize(c, a);
+        } catch(autoSummErr) {}
+        toast('已收到 ' + getCharDisplayName(c) + ' 发来的语音消息 🎵');
+      };
+      reader.readAsDataURL(blob);
     }).catch(function(err) {
       console.error('Voice generation error:', err);
       toast('❌ 语音生成失败: ' + err.message);
