@@ -564,13 +564,21 @@ window.REVERY_MEMORY = {
         innerContentHtml = (thinkingRowHtml ? '<div class="msg-col-wrap">' + thinkingRowHtml + bodyBubbleHtml + '</div>' : bodyBubbleHtml);
       }
 
+      var isSelected = isMultiSelecting && selectedMsgIndices.has(idx);
+      var multiRowClass = rowClass + (isMultiSelecting ? ' multi-selecting' : '') + (isSelected ? ' selected-for-delete' : '');
+      var selectCheckHtml = '<div class="msg-select-checkbox">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+      '</div>';
+
       if (isMe) {
-        htmlBuffer += '<div class="' + rowClass + '" data-index="' + idx + '">' +
+        htmlBuffer += '<div class="' + multiRowClass + '" data-index="' + idx + '">' +
+          selectCheckHtml +
           innerContentHtml +
           '<img class="msg-avatar" src="' + userAvatarUrl + '" alt="用户头像">' +
           '</div>';
       } else {
-        htmlBuffer += '<div class="' + rowClass + '" data-index="' + idx + '">' +
+        htmlBuffer += '<div class="' + multiRowClass + '" data-index="' + idx + '">' +
+          selectCheckHtml +
           '<img class="msg-avatar" src="' + charAvatarUrl + '" alt="' + esc(c.name) + '">' +
           innerContentHtml +
           '</div>';
@@ -2685,7 +2693,241 @@ window.REVERY_MEMORY = {
   applyTheme();
   render();
 })();
-  // 主题页面独立代码的最小兼容层：不触碰主程序闭包内的其他逻辑
+  
+  // =========================================================================
+  // 消息双击多选批量删除 & 消息双向改写编辑模块
+  // =========================================================================
+  var isMultiSelecting = false;
+  var selectedMsgIndices = new Set();
+  var currentEditingMsgIndex = -1;
+
+  function updateMultiSelectBar() {
+    var bar = $('msgMultiSelectBar');
+    var countText = $('multiSelectCountText');
+    if (!bar) return;
+    if (isMultiSelecting) {
+      bar.classList.add('show');
+      if (countText) countText.textContent = '已选择 ' + selectedMsgIndices.size + ' 条消息';
+    } else {
+      bar.classList.remove('show');
+    }
+  }
+
+  function enterMultiSelectMode(initialIndex) {
+    isMultiSelecting = true;
+    selectedMsgIndices.clear();
+    if (typeof initialIndex === 'number' && initialIndex >= 0) {
+      selectedMsgIndices.add(initialIndex);
+    }
+    updateMultiSelectBar();
+    var c = character(activeId);
+    if (c) renderMessages(c);
+  }
+
+  function exitMultiSelectMode() {
+    isMultiSelecting = false;
+    selectedMsgIndices.clear();
+    updateMultiSelectBar();
+    var c = character(activeId);
+    if (c) renderMessages(c);
+  }
+
+  function openMsgEditModal(index) {
+    var c = character(activeId);
+    if (!c || !c.messages || !c.messages[index]) return;
+    var m = c.messages[index];
+    currentEditingMsgIndex = index;
+    
+    var roleTag = $('msgEditTargetRole');
+    if (roleTag) {
+      roleTag.textContent = (m.role === 'user' ? '我方发送' : (getCharDisplayName(c) + ' 发送'));
+    }
+
+    var parsed = parseMessageContent(m.text);
+    var targetText = parsed.body || m.text || '';
+    if ($('msgEditTextArea')) {
+      $('msgEditTextArea').value = targetText;
+      setTimeout(function() { $('msgEditTextArea').focus(); }, 150);
+    }
+    if ($('msgEditModal')) $('msgEditModal').classList.add('show');
+  }
+
+  function closeMsgEditModal() {
+    currentEditingMsgIndex = -1;
+    if ($('msgEditModal')) $('msgEditModal').classList.remove('show');
+  }
+
+  // 绑定编辑模态框事件
+  if ($('msgEditCancelBtn')) {
+    $('msgEditCancelBtn').onclick = closeMsgEditModal;
+  }
+  if ($('msgEditSaveBtn')) {
+    $('msgEditSaveBtn').onclick = function() {
+      var c = character(activeId);
+      if (!c || currentEditingMsgIndex < 0 || !c.messages[currentEditingMsgIndex]) {
+        closeMsgEditModal();
+        return;
+      }
+      var newText = ($('msgEditTextArea').value || '').trim();
+      if (!newText) {
+        toast('内容不能为空');
+        return;
+      }
+      var m = c.messages[currentEditingMsgIndex];
+      var parsed = parseMessageContent(m.text);
+      if (parsed.thought) {
+        m.text = '<think>\n' + parsed.thought + '\n</think>\n' + newText;
+      } else {
+        m.text = newText;
+      }
+      save();
+      renderMessages(c);
+      closeMsgEditModal();
+      toast('消息内容已成功改写 ✨');
+    };
+  }
+
+  // 绑定多选顶栏取消与删除按钮
+  if ($('multiSelectCancelBtn')) {
+    $('multiSelectCancelBtn').onclick = exitMultiSelectMode;
+  }
+  if ($('multiSelectAllBtn')) {
+    $('multiSelectAllBtn').onclick = function() {
+      var c = character(activeId);
+      if (!c) return;
+      if (selectedMsgIndices.size === c.messages.length) {
+        selectedMsgIndices.clear();
+      } else {
+        for (var i = 0; i < c.messages.length; i++) {
+          selectedMsgIndices.add(i);
+        }
+      }
+      updateMultiSelectBar();
+      renderMessages(c);
+    };
+  }
+  if ($('multiSelectDeleteBtn')) {
+    $('multiSelectDeleteBtn').onclick = function() {
+      var c = character(activeId);
+      if (!c || selectedMsgIndices.size === 0) {
+        toast('请至少勾选一条消息');
+        return;
+      }
+      if (confirm('确定要彻底删除选中的 ' + selectedMsgIndices.size + ' 条消息吗？')) {
+        c.messages = c.messages.filter(function(_, idx) {
+          return !selectedMsgIndices.has(idx);
+        });
+        save();
+        exitMultiSelectMode();
+        toast('已批量删除所选消息');
+      }
+    };
+  }
+
+  // 全局移除快捷菜单
+  function removeQuickMenu() {
+    var old = document.querySelector('.msg-quick-menu');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+  }
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.msg-quick-menu')) {
+      removeQuickMenu();
+    }
+  });
+
+  // 监听双击消息气泡：唤起快捷浮层操作菜单 (包含 [编辑] / [多选删除] / [删除此条])
+  document.addEventListener('dblclick', function(e) {
+    var row = e.target.closest('.msg-row');
+    if (!row) return;
+    var idx = parseInt(row.getAttribute('data-index'), 10);
+    if (isNaN(idx)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isMultiSelecting) {
+      // 如果当前已经在多选模式，双击直接切换选中状态
+      if (selectedMsgIndices.has(idx)) {
+        selectedMsgIndices.delete(idx);
+      } else {
+        selectedMsgIndices.add(idx);
+      }
+      updateMultiSelectBar();
+      var c = character(activeId);
+      if (c) renderMessages(c);
+      return;
+    }
+
+    // 弹出快捷操作气泡
+    removeQuickMenu();
+    var menu = document.createElement('div');
+    menu.className = 'msg-quick-menu';
+
+    var rect = row.getBoundingClientRect();
+    var topPos = Math.max(60, rect.top - 46);
+    var leftPos = Math.max(16, Math.min(window.innerWidth - 220, rect.left + rect.width / 2 - 100));
+    menu.style.top = topPos + 'px';
+    menu.style.left = leftPos + 'px';
+
+    menu.innerHTML = '' +
+      '<button type="button" class="msg-quick-menu-item" id="quickEditBtn">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>' +
+        '<span>编辑</span>' +
+      '</button>' +
+      '<button type="button" class="msg-quick-menu-item" id="quickMultiBtn">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>' +
+        '<span>多选</span>' +
+      '</button>' +
+      '<button type="button" class="msg-quick-menu-item danger" id="quickDelBtn">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
+        '<span>删除</span>' +
+      '</button>';
+
+    document.body.appendChild(menu);
+
+    menu.querySelector('#quickEditBtn').onclick = function(ev) {
+      ev.stopPropagation();
+      removeQuickMenu();
+      openMsgEditModal(idx);
+    };
+    menu.querySelector('#quickMultiBtn').onclick = function(ev) {
+      ev.stopPropagation();
+      removeQuickMenu();
+      enterMultiSelectMode(idx);
+    };
+    menu.querySelector('#quickDelBtn').onclick = function(ev) {
+      ev.stopPropagation();
+      removeQuickMenu();
+      var c = character(activeId);
+      if (!c) return;
+      if (confirm('确定删除该条消息？')) {
+        c.messages.splice(idx, 1);
+        save();
+        renderMessages(c);
+        toast('消息已删除');
+      }
+    };
+  });
+
+  // 在多选模式下，单击 row 直接切换选中状态
+  document.addEventListener('click', function(e) {
+    if (!isMultiSelecting) return;
+    var row = e.target.closest('.msg-row');
+    if (!row) return;
+    var idx = parseInt(row.getAttribute('data-index'), 10);
+    if (isNaN(idx)) return;
+    if (selectedMsgIndices.has(idx)) {
+      selectedMsgIndices.delete(idx);
+    } else {
+      selectedMsgIndices.add(idx);
+    }
+    updateMultiSelectBar();
+    var c = character(activeId);
+    if (c) renderMessages(c);
+  });
+
+
+// 主题页面独立代码的最小兼容层：不触碰主程序闭包内的其他逻辑
   function $(id) { return document.getElementById(id); }
   function closeDrawer() {
     var drawer = document.getElementById('drawer');
