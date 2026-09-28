@@ -1904,7 +1904,7 @@ window.REVERY_MEMORY = {
     if (!isElevenProvider) {
       // === MiniMax 海螺语音引擎专属提示词 (若要大声嘶喊出爱的话 2.0 规范) ===
       systemPrompt += '\n\n【发语音能力协议 · MiniMax (海螺) 拟真呼吸与真实活人感规范】\n' +
-        '你完全具备像真人一样随时发语音消息的能力。当你觉得打字不够传达语气、想轻声叹气、撒娇、说悄悄话、或者语境更适合发语音条时，可以在回复的最后加上 `[VOICE: 语音内容]`。\n' +
+        '你完全具备像真人一样随时发语音消息的能力。当你觉得打字不够传达语气、想轻声叹气、撒娇、说悄悄话、或者语境更适合发语音条时，可以在回复的任意位置（开头、中间某句话、独立段落或末尾）加上 `[VOICE: 语音内容]`。AI的回复完全可以先发一段文字，然后发一条语音，再接着打字聊天，如同真人自然穿插语音条。\n' +
         '⚠️ MiniMax 语音活人感发声铁律：\n' +
         '1. 呼吸与叹气是活人感的灵魂：请在语音文字中自然穿插 MiniMax 支持的发声标签：\n' +
         '   - 吸气/换气/深吸：(breath)\n' +
@@ -1919,7 +1919,7 @@ window.REVERY_MEMORY = {
     } else {
       // === ElevenLabs V3 官方音频标签与电影级情感演绎规范 ===
       systemPrompt += '\n\n【发语音能力协议 · ElevenLabs V3 情绪与呼吸演绎规范】\n' +
-        '你完全具备像真人一样随时发语音消息的能力。当前已接入 ElevenLabs V3 拟真情绪模型。当你决定发语音条时，在回复末尾加上 `[VOICE: 语音内容]`。\n' +
+        '你完全具备像真人一样随时发语音消息的能力。当前已接入 ElevenLabs V3 拟真情绪模型。你可以在回复的任何段落或任何位置自然穿插 `[VOICE: 语音内容]`，完全不限制在最后一条。\n' +
         '⚠️ ElevenLabs V3 官方发声规范：\n' +
         '1. 采用 V3 官方方括号英文音频标签（放在短句开头驱动整句情绪）：\n' +
         '   - 亲密/耳语/低声：[whispers] 或 [quietly] 或 [continues softly]\n' +
@@ -2063,18 +2063,36 @@ window.REVERY_MEMORY = {
         thoughtText = charName + '看着你的消息，心里微微一动，默默想好了接下来要对你说的话……';
       }
 
-      // 检查是否有自主发语音指令 [VOICE: xxx]
-      var voiceMatch = bodyText.match(/\[VOICE:\s*([^\]]+)\]/);
-      var aiVoiceText = '';
-      if (voiceMatch) {
-        aiVoiceText = voiceMatch[1].trim();
-        bodyText = bodyText.replace(/\[VOICE:\s*[^\]]+\]/g, '').trim();
-      }
+      // 支持语音消息分布在任意位置（开头、中间段落、结尾或任意夹杂）
+      // 将 bodyText 按照双换行以及 [VOICE: ...] 标签精细分块，保持原汁原味的自然先后顺序
+      var rawChunks = bodyText.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
+      if (rawChunks.length === 0) rawChunks = [bodyText.trim() || '……'];
 
-      // 检查正文是否需要分条发送（按双换行切分成多个自然小气泡）
-      var paragraphs = bodyText.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
-      if (paragraphs.length <= 1) {
-        paragraphs = [bodyText];
+      var sequence = [];
+      rawChunks.forEach(function(chunk) {
+        // 匹配该段落中可能内嵌的 [VOICE: xxx]
+        var voiceRegex = /\[VOICE:\s*([^\]]+)\]/g;
+        var lastIdx = 0;
+        var match;
+        while ((match = voiceRegex.exec(chunk)) !== null) {
+          var beforeText = chunk.substring(lastIdx, match.index).trim();
+          if (beforeText) {
+            sequence.push({ type: 'text', text: beforeText });
+          }
+          var voiceContent = match[1].trim();
+          if (voiceContent) {
+            sequence.push({ type: 'voice', text: voiceContent });
+          }
+          lastIdx = match.index + match[0].length;
+        }
+        var afterText = chunk.substring(lastIdx).trim();
+        if (afterText) {
+          sequence.push({ type: 'text', text: afterText });
+        }
+      });
+
+      if (sequence.length === 0) {
+        sequence = [{ type: 'text', text: bodyText || '……' }];
       }
 
       var idx = c.messages.indexOf(tempMsg);
@@ -2082,20 +2100,31 @@ window.REVERY_MEMORY = {
         c.messages.splice(idx, 1);
       }
 
-      // 第一条附带思考过程
-      var firstBubble = '<think>\n' + thoughtText + '\n</think>\n' + (paragraphs[0] || '');
-      c.messages.push({ role: 'assistant', text: firstBubble, time: time() });
+      // 找到第一条文本气泡附带思考过程（如果第一条就是语音，则思考过程挂在语音之前的空思考文本气泡或第一条文本中）
+      var attachedThought = false;
+      var voiceDelay = 400;
 
-      // 后续段落作为独立分条气泡自然发出
-      for (var pi = 1; pi < paragraphs.length; pi++) {
-        c.messages.push({ role: 'assistant', text: paragraphs[pi], time: time() });
-      }
-
-      if (aiVoiceText) {
-        setTimeout(function() {
-          generateCharVoiceMessage(c, aiVoiceText);
-        }, 600);
-      }
+      sequence.forEach(function(item, sIndex) {
+        if (item.type === 'text') {
+          var bubbleText = item.text;
+          if (!attachedThought) {
+            bubbleText = '<think>\n' + thoughtText + '\n</think>\n' + bubbleText;
+            attachedThought = true;
+          }
+          c.messages.push({ role: 'assistant', text: bubbleText, time: time() });
+        } else if (item.type === 'voice') {
+          // 如果第一条恰好是语音且思考过程还没挂载，先发思考气泡
+          if (!attachedThought) {
+            c.messages.push({ role: 'assistant', text: '<think>\n' + thoughtText + '\n</think>', time: time() });
+            attachedThought = true;
+          }
+          var curVoiceText = item.text;
+          setTimeout(function() {
+            generateCharVoiceMessage(c, curVoiceText);
+          }, voiceDelay);
+          voiceDelay += 1200; // 依次错开生成并插入到当前最新位置
+        }
+      });
 
       save();
       renderMessages(c);
