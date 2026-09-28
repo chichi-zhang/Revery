@@ -2132,14 +2132,18 @@ window.REVERY_MEMORY = {
     $('messageInput').addEventListener('input', updateInputCapsuleState);
     $('messageInput').addEventListener('change', updateInputCapsuleState);
     
-    // 点击胶囊内的声波按钮直接呼叫角色发语音
+    // 点击胶囊内的声波波形图标直接触发正常的 AI 文字回复
+    var replyHandler = function(e) {
+      if (e) e.preventDefault();
+      var c = character(activeId);
+      if (!c) return;
+      requestReply(c);
+    };
+    if ($('imessageReplyBtn')) {
+      $('imessageReplyBtn').addEventListener('click', replyHandler);
+    }
     if ($('imessageVoiceBtn')) {
-      $('imessageVoiceBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        var c = character(activeId);
-        if (c) generateCharVoiceMessage(c);
-        else toast('未选定角色');
-      });
+      $('imessageVoiceBtn').addEventListener('click', replyHandler);
     }
 
     $('messageInput').addEventListener('keydown', function(e) {
