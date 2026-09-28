@@ -2221,3 +2221,150 @@ html[data-theme="light"] .dog-memories-text-btn:active {
   color: var(--muted);
   font-size: 13px;
 }
+
+
+/* ===== 双击多选批量删除 & 消息编辑样式 ===== */
+.msg-row {
+  position: relative;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.msg-row.multi-selecting {
+  padding-left: 36px !important;
+}
+.msg-select-checkbox {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.8px solid var(--line);
+  background: var(--panel);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.2s ease;
+}
+.msg-row.multi-selecting .msg-select-checkbox {
+  display: flex;
+}
+.msg-row.selected-for-delete {
+  background: rgba(255, 69, 58, 0.08) !important;
+  border-radius: 12px;
+}
+.msg-row.selected-for-delete .msg-select-checkbox {
+  background: #ff453a !important;
+  border-color: #ff453a !important;
+}
+.msg-select-checkbox svg {
+  display: none;
+  color: #fff;
+}
+.msg-row.selected-for-delete .msg-select-checkbox svg {
+  display: block;
+}
+
+/* 顶部批量操作栏 */
+.multi-select-action-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--topbar);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line);
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 1000;
+  animation: slideDownBar 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.multi-select-action-bar.show {
+  display: flex;
+}
+@keyframes slideDownBar {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+.multi-select-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.multi-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.multi-select-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.multi-select-btn.cancel {
+  background: var(--chip);
+  color: var(--text);
+}
+.multi-select-btn.delete {
+  background: #ff453a;
+  color: #fff;
+}
+.multi-select-btn.select-all {
+  background: var(--chip);
+  color: var(--text);
+}
+
+/* 消息长按/双击快捷浮层操作菜单 (复制 / 编辑 / 多选删除) */
+.msg-quick-menu {
+  position: fixed;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+  border-radius: 14px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  z-index: 1100;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: popInQuickMenu 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popInQuickMenu {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.msg-quick-menu-item {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.msg-quick-menu-item:hover, .msg-quick-menu-item:active {
+  background: var(--chip);
+}
+.msg-quick-menu-item.danger {
+  color: #ff453a;
+}
